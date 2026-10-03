@@ -1,6 +1,7 @@
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 
+import bot
 import customers
 import invoices
 import storage
@@ -12,6 +13,12 @@ class CustomerIn(BaseModel):
     """The data a client sends to create or change a customer."""
     name: str
     address: str
+
+
+class ChatIn(BaseModel):
+    """One chat message from the frontend. conversation_id is empty on the first message."""
+    message: str
+    conversation_id: str | None = None
 
 
 @app.get("/customers")
@@ -54,6 +61,13 @@ def remove_customer(customer_id: str):
     if customer is None:
         raise HTTPException(404, f"Customer {customer_id} not found")
     return customer
+
+
+@app.post("/customers/chat")
+def customer_chat(data: ChatIn):
+    """Send one message to the customer bot. Returns its question, or a proposal to confirm. Never saves."""
+    return bot.converse("inv-customer-bot", customers.data_block(), customers.check_command,
+                        customers.build_proposal, data.conversation_id, data.message)
 
 
 @app.get("/products")
