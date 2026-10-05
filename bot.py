@@ -37,19 +37,19 @@ def get_conversation(conversation_id):
     return conversation_id, CONVERSATIONS[conversation_id]
 
 
-def converse(model, data_block, check_command, build_proposal, conversation_id, message):
-    """Handle one user message: ask the bot, check its command, return either its reply or a proposal."""
+def converse(model, check_command, build_proposal, conversation_id, message):
+    """Handle one user message: ask the bot, check its command, return its reply, Python's message or a proposal."""
     conversation_id, messages = get_conversation(conversation_id)
-    text = f"{data_block}\n\nUser message: {message}"
-    for _ in range(3):  # first try + up to 2 retries after an error note
-        messages.append({"role": "user", "content": text})
-        reply = chat(model, messages)
+    messages.append({"role": "user", "content": message})
+    reply = chat(model, messages)
+    command = parse_command(reply)
+    if command is None:
         messages.append({"role": "assistant", "content": reply})
-        command = parse_command(reply)
-        if command is None:
-            return {"conversation_id": conversation_id, "reply": reply}
-        error = check_command(*command)
-        if error is None:
-            return {"conversation_id": conversation_id, "proposal": build_proposal(*command)}
-        text = f"{data_block}\n\n(System note: {error} Ask the user for the correct information.)"
-    return {"conversation_id": conversation_id, "reply": f"Sorry, I could not complete this: {error}"}
+        return {"conversation_id": conversation_id, "reply": reply}
+    error = check_command(*command)
+    if error:
+        # Python's message goes straight to the user; the bot sees it in the conversation as what was said
+        messages.append({"role": "assistant", "content": error})
+        return {"conversation_id": conversation_id, "reply": error}
+    messages.append({"role": "assistant", "content": reply})
+    return {"conversation_id": conversation_id, "proposal": build_proposal(*command)}

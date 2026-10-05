@@ -1,5 +1,3 @@
-import json
-
 import storage
 
 FIELDS = ["name", "address"]
@@ -50,21 +48,26 @@ def delete_customer(customer_id):
     return customer
 
 
-def data_block():
-    """The <CUSTOMER DATA> block for the customer bot: all customers with number, name and address."""
-    return f"<CUSTOMER DATA>\n{json.dumps(storage.load('customers'), ensure_ascii=False)}\n</CUSTOMER DATA>"
+def find_customers(name):
+    """All customers whose name contains the given text (not case-sensitive)."""
+    text = str(name).strip().lower()
+    return [c for c in storage.load("customers") if text and text in c["name"].lower()]
 
 
-def check_command(name, data):
-    """Check a command of the customer bot. Return an error message for the bot, or None if it is valid."""
-    if name == "CREATE_CUSTOMER":
+def check_command(command, data):
+    """Check a command of the customer bot. Return an error message, or None if it is valid."""
+    if command == "CREATE_CUSTOMER":
         return check_customer(data)
-    if name not in ("UPDATE_CUSTOMER", "DELETE_CUSTOMER"):
-        return f"{name} is not a customer command."
-    customer = storage.find(storage.load("customers"), data.get("id"))
-    if customer is None:
-        return f"There is no customer with id {data.get('id')}."
-    if name == "UPDATE_CUSTOMER":
+    if command not in ("UPDATE_CUSTOMER", "DELETE_CUSTOMER"):
+        return f"{command} is not a customer command."
+    matches = find_customers(data.get("name", ""))
+    if not matches:
+        return f"There is no customer called {data.get('name')}."
+    if len(matches) > 1:
+        return f"There are {len(matches)} customers called {data.get('name')}: " \
+               f"{', '.join(c['name'] for c in matches)}. Which one do you mean?"
+    customer = matches[0]
+    if command == "UPDATE_CUSTOMER":
         return check_customer({**customer, data.get("field"): data.get("value")}) if data.get("field") in FIELDS \
             else f"The field must be one of: {', '.join(FIELDS)}."
     used_in = [i["id"] for i in storage.load("invoices") if i["customer_id"] == customer["id"]]
@@ -73,14 +76,14 @@ def check_command(name, data):
     return None
 
 
-def build_proposal(name, data):
+def build_proposal(command, data):
     """Turn a valid command into the CRUD call the frontend makes after the user's yes, plus a summary."""
-    if name == "CREATE_CUSTOMER":
+    if command == "CREATE_CUSTOMER":
         body = {"name": data["name"].strip(), "address": data["address"].strip()}
         return {"method": "POST", "path": "/customers", "body": body,
                 "summary": f"Create customer: {body['name']} | {body['address']}"}
-    customer = storage.find(storage.load("customers"), data["id"])
-    if name == "UPDATE_CUSTOMER":
+    customer = find_customers(data["name"])[0]
+    if command == "UPDATE_CUSTOMER":
         body = {"name": customer["name"], "address": customer["address"], data["field"]: data["value"].strip()}
         return {"method": "PUT", "path": f"/customers/{customer['id']}", "body": body,
                 "summary": f"Change {data['field']} of {customer['id']} ({customer['name']}): "

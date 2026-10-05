@@ -66,8 +66,8 @@ def remove_customer(customer_id: str):
 @app.post("/customers/chat")
 def customer_chat(data: ChatIn):
     """Send one message to the customer bot. Returns its question, or a proposal to confirm. Never saves."""
-    return bot.converse("inv-customer-bot", customers.data_block(), customers.check_command,
-                        customers.build_proposal, data.conversation_id, data.message)
+    return bot.converse("inv-customer-bot", customers.check_command, customers.build_proposal,
+                        data.conversation_id, data.message)
 
 
 @app.get("/products")
