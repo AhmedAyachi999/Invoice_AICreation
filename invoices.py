@@ -153,7 +153,7 @@ def check_command(command, data):
     if command == "CREATE_INVOICE":
         invoice, error = resolve(data)
         return error or check_invoice(invoice)
-    if command not in ("UPDATE_INVOICE", "DELETE_INVOICE"):
+    if command not in ("UPDATE_INVOICE", "DELETE_INVOICE", "SHOW_INVOICE"):
         return f"{command} is not an invoice command."
     if storage.find(storage.load("invoices"), str(data.get("id", "")).strip().upper()) is None:
         return f"There is no invoice {data.get('id')}."
@@ -169,6 +169,14 @@ def describe_lines(lines):
     all_products = storage.load("products")
     return "; ".join(f"{line['line']}: {line['quantity']} x {storage.find(all_products, line['product_id'])['name']}"
                      f" x {line['unit_price']:.2f} = {line['quantity'] * line['unit_price']:.2f}" for line in lines)
+
+
+def answer(command, data):
+    """Answer a SHOW_INVOICE: the invoice with customer name, dates, status, lines and total."""
+    invoice = storage.find(storage.load("invoices"), str(data["id"]).strip().upper())
+    customer = storage.find(storage.load("customers"), invoice["customer_id"])
+    return (f"{invoice['id']}: {customer['name']} | date {invoice['date']} | due {invoice['due_date']} | "
+            f"{invoice['status']} | {describe_lines(invoice['lines'])} | total {invoice_total(invoice):.2f}")
 
 
 def build_proposal(command, data):

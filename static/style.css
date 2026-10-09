@@ -1,0 +1,32 @@
+body { font-family: Arial, sans-serif; margin: 0; background: #f4f6f8; color: #222; }
+
+#title { padding: 14px 16px; background: #1f4e79; color: #fff; font-size: 20px; font-weight: bold; }
+#tabs { display: flex; gap: 4px; margin-bottom: 8px; }
+#tabs button { padding: 6px 14px; border: 1px solid #c5d3e0; border-radius: 4px; background: #eaf1f8; cursor: pointer; }
+#tabs button.active { background: #1f4e79; color: #fff; font-weight: bold; }
+
+main { display: flex; gap: 16px; padding: 16px; height: calc(100vh - 90px); box-sizing: border-box; }
+#chat { flex: 1; display: flex; flex-direction: column; background: #fff; border-radius: 6px; padding: 10px; }
+#messages { flex: 1; overflow-y: auto; }
+#list { flex: 1; background: #fff; border-radius: 6px; padding: 10px; overflow-y: auto; }
+
+.message { margin: 6px 0; padding: 8px 10px; border-radius: 6px; white-space: pre-line; }
+.message.you { background: #e3f0ff; text-align: right; }
+.message.bot { background: #eef7ee; }
+.message.system { background: #fff6e0; font-style: italic; }
+.message button { margin-left: 6px; padding: 3px 12px; cursor: pointer; }
+.date-picker { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; font-style: normal; }
+.date-picker input { margin-left: 6px; padding: 4px; }
+.record-picker { font-style: normal; }
+.record-picker input { margin-left: 6px; padding: 4px; width: 240px; }
+.line-picker { font-style: normal; }
+.line-picker select, .line-picker input { padding: 4px; margin-right: 6px; }
+.line-picker .quantity { width: 60px; }
+.line-picker ul { margin: 6px 0; padding-left: 20px; }
+
+#chat-form { display: flex; gap: 6px; margin-top: 8px; }
+#chat-input { flex: 1; padding: 8px; }
+
+table { width: 100%; border-collapse: collapse; }
+th, td { text-align: left; padding: 6px; border-bottom: 1px solid #ddd; }
+th { background: #eaf1f8; }

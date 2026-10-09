@@ -79,11 +79,13 @@ def check_command(command, data):
     """Check a command of the product bot. Return an error message, or None if it is valid."""
     if command == "CREATE_PRODUCT":
         return check_product(data)
-    if command not in ("UPDATE_PRODUCT", "DELETE_PRODUCT"):
+    if command not in ("UPDATE_PRODUCT", "DELETE_PRODUCT", "SHOW_PRODUCT"):
         return f"{command} is not a product command."
     matches = find_products(data.get("name", ""))
     if not matches:
         return f"There is no product called {data.get('name')}."
+    if command == "SHOW_PRODUCT":
+        return None
     if len(matches) > 1:
         return f"There are {len(matches)} products called {data.get('name')}: " \
                f"{', '.join(p['name'] for p in matches)}. Which one do you mean?"
@@ -96,6 +98,13 @@ def check_command(command, data):
     if used_in:
         return f"{product['name']} cannot be deleted: used in invoices {', '.join(used_in)}."
     return None
+
+
+def answer(command, data):
+    """Answer a SHOW_PRODUCT: one line per product whose name matches."""
+    return "\n".join(f"{p['id']}: {p['name']} | sell price {p['sell_price']} | "
+                     f"buy price {'-' if p['buy_price'] is None else p['buy_price']}"
+                     for p in find_products(data["name"]))
 
 
 def build_proposal(command, data):

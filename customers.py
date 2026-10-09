@@ -58,11 +58,15 @@ def check_command(command, data):
     """Check a command of the customer bot. Return an error message, or None if it is valid."""
     if command == "CREATE_CUSTOMER":
         return check_customer(data)
-    if command not in ("UPDATE_CUSTOMER", "DELETE_CUSTOMER"):
+    if command not in ("UPDATE_CUSTOMER", "DELETE_CUSTOMER", "SHOW_CUSTOMER"):
         return f"{command} is not a customer command."
+    if command == "SHOW_CUSTOMER" and not str(data.get("name") or "").strip():  # list of all customers
+        return None
     matches = find_customers(data.get("name", ""))
     if not matches:
         return f"There is no customer called {data.get('name')}."
+    if command == "SHOW_CUSTOMER":
+        return None
     if len(matches) > 1:
         return f"There are {len(matches)} customers called {data.get('name')}: " \
                f"{', '.join(c['name'] for c in matches)}. Which one do you mean?"
@@ -74,6 +78,19 @@ def check_command(command, data):
     if used_in:
         return f"{customer['name']} cannot be deleted: used in invoices {', '.join(used_in)}."
     return None
+
+
+LIST_LIMIT = 10  # at most this many customers in one chat answer
+
+
+def answer(command, data):
+    """Answer a SHOW_CUSTOMER: one line per customer whose name matches, or all customers (at most LIST_LIMIT)."""
+    name = str(data.get("name") or "").strip()
+    found = find_customers(name) if name else storage.load("customers")
+    lines = [f"{c['id']}: {c['name']} | {c['address']}" for c in found[:LIST_LIMIT]]
+    if len(found) > LIST_LIMIT:
+        lines.append(f"... and {len(found) - LIST_LIMIT} more. Please write a name to narrow it down.")
+    return "\n".join(lines)
 
 
 def build_proposal(command, data):

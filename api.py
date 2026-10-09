@@ -1,10 +1,16 @@
+from pathlib import Path
+
 from fastapi import FastAPI, HTTPException
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
+import assistant
 import bot
 import customers
 import invoices
 import products
+import reports
+import router
 import storage
 
 app = FastAPI(title="AI Invoice Assistant")
@@ -62,13 +68,19 @@ def get_customer(customer_id: str):
 
 @app.post("/customers", status_code=201)
 def add_customer(data: CustomerIn):
-    """Create a customer and return it with its new number."""
+    """Create a customer and return it with its new number, or 400 if the data is not valid."""
+    error = customers.check_customer(data.model_dump())
+    if error:
+        raise HTTPException(400, error)
     return customers.create_customer(data.model_dump())
 
 
 @app.put("/customers/{customer_id}")
 def change_customer(customer_id: str, data: CustomerIn):
-    """Change name and address of a customer, or 404 if the number doesn't exist."""
+    """Change name and address of a customer: 404 if the number doesn't exist, 400 if the data is not valid."""
+    error = customers.check_customer(data.model_dump())
+    if error:
+        raise HTTPException(400, error)
     customer = customers.update_customer(customer_id, data.model_dump())
     if customer is None:
         raise HTTPException(404, f"Customer {customer_id} not found")
@@ -90,7 +102,7 @@ def remove_customer(customer_id: str):
 @app.post("/customers/chat")
 def customer_chat(data: ChatIn):
     """Send one message to the customer bot. Returns its question, or a proposal to confirm. Never saves."""
-    return bot.converse("inv-customer-bot", customers.check_command, customers.build_proposal,
+    return bot.converse("inv-customer-bot", customers.check_command, customers.build_proposal, customers.answer,
                         data.conversation_id, data.message)
 
 
@@ -145,7 +157,7 @@ def remove_product(product_id: str):
 @app.post("/products/chat")
 def product_chat(data: ChatIn):
     """Send one message to the product bot. Returns its question, or a proposal to confirm. Never saves."""
-    return bot.converse("inv-product-bot", products.check_command, products.build_proposal,
+    return bot.converse("inv-product-bot", products.check_command, products.build_proposal, products.answer,
                         data.conversation_id, data.message)
 
 
@@ -198,5 +210,59 @@ def remove_invoice(invoice_id: str):
 @app.post("/invoices/chat")
 def invoice_chat(data: ChatIn):
     """Send one message to the invoice bot. Returns its question, or a proposal to confirm. Never saves."""
-    return bot.converse("inv-invoice-bot", invoices.check_command, invoices.build_proposal,
+    return bot.converse("inv-invoice-bot", invoices.check_command, invoices.build_proposal, invoices.answer,
                         data.conversation_id, data.message)
+
+
+@app.get("/reports/customers")
+def report_customers(start: str, end: str):
+    """R1: turnover per customer between start and end (DD/MM/YYYY, query parameters), or 400 if the period is not valid."""
+    error = reports.check_period(start, end)
+    if error:
+        raise HTTPException(400, error)
+    return reports.turnover_by_customer(start, end)
+
+
+@app.get("/reports/products")
+def report_products(start: str, end: str):
+    """R2: turnover and quantity per product between start and end (DD/MM/YYYY, query parameters), or 400 if the period is not valid."""
+    error = reports.check_period(start, end)
+    if error:
+        raise HTTPException(400, error)
+    return reports.turnover_by_product(start, end)
+
+
+@app.get("/reports/months")
+def report_months(year: str, customer_id: str | None = None, product_id: str | None = None):
+    """R3: turnover for each month of a year, optionally for one customer and/or one product (by number).
+    400 if the year is not valid, 404 if the customer or product doesn't exist."""
+    if invoices.to_date(f"01/01/{year}") is None:
+        raise HTTPException(400, f"The year must be a 4-digit year like 2026, not '{year}'.")
+    if customer_id and storage.find(storage.load("customers"), customer_id) is None:
+        raise HTTPException(404, f"Customer {customer_id} not found")
+    if product_id and storage.find(storage.load("products"), product_id) is None:
+        raise HTTPException(404, f"Product {product_id} not found")
+    return reports.turnover_by_month(year, customer_id, product_id)
+
+
+@app.post("/reports/chat")
+def report_chat(data: ChatIn):
+    """Ask the report bot a turnover question. Returns its question, or Python's answer with the numbers. Never saves."""
+    return bot.converse("inv-report-bot", reports.check_command, None, reports.answer,
+                        data.conversation_id, data.message)
+
+
+@app.post("/assistant/chat")
+def assistant_chat(data: ChatIn):
+    """Ask the assistant (bot with tools). Returns its answer, or a proposal to confirm. Never saves."""
+    return assistant.converse(data.conversation_id, data.message)
+
+
+@app.post("/chat")
+def chat(data: ChatIn):
+    """The single chat: the router sends the message to the customer, product or invoice bot. Never saves."""
+    return router.converse(data.conversation_id, data.message)
+
+
+# Must stay last: serves the frontend (static/) at "/" after all API endpoints were matched.
+app.mount("/", StaticFiles(directory=Path(__file__).parent / "static", html=True), name="static")
