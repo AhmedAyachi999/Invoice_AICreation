@@ -2,6 +2,7 @@
 and returned as a proposal, which the frontend saves through the CRUD endpoints after the user's yes."""
 import calendar
 import json
+import re
 import urllib.request
 
 import customers
@@ -15,7 +16,9 @@ MODEL = "llama3.2:3b"
 MAX_ROUNDS = 5  # tool calls per user message before the bot has to answer
 SYSTEM = ("You help with the customers, products, invoices and turnover of an invoicing system. Use the tools to "
           "read data and answer only from what they return. Dates are DD/MM/YYYY. Turnover means paid invoices, "
-          "counted by due date. Records are changed only with the create_/update_/delete_ tools, which ask the user "
+          "counted by due date. An invoice is either paid or unpaid: open, outstanding, not paid, pending or still due "
+          "mean unpaid; settled, cleared or already paid mean paid. In the tools, write status only as \"paid\" or "
+          "\"unpaid\". Records are changed only with the create_/update_/delete_ tools, which ask the user "
           "to confirm first; never say that something was saved before the user confirmed. "
           "Write every answer in three parts:\n"
           "Answer: the result.\n"
@@ -53,7 +56,7 @@ SYSTEM = ("You help with the customers, products, invoices and turnover of an in
           "Example 2:\n"
           "User: how much turnover did we make per customer?\n"
           "Assistant calls ask_turnover_period()\n"
-          "User: turnover from 01/03/2031 to 31/03/2031, all customers, all products\n"
+          "User: turnover per customer from 01/03/2031 to 31/03/2031, all customers\n"
           "Assistant calls get_turnover_by_customer(start=\"01/03/2031\", end=\"31/03/2031\")\n"
           "Tool: [{\"customer_id\": \"CUS-047\", \"name\": \"Mara Quist\", \"turnover\": 120.0}, "
           "{\"customer_id\": \"CUS-052\", \"name\": \"Ole Brandt\", \"turnover\": 80.0}, "
@@ -65,7 +68,7 @@ SYSTEM = ("You help with the customers, products, invoices and turnover of an in
           "Example 2a:\n"
           "User: turnover of one customer\n"
           "Assistant calls ask_turnover_period()\n"
-          "User: turnover from 01/03/2031 to 31/03/2031, customer: Ole Brandt (CUS-052), all products\n"
+          "User: turnover per customer from 01/03/2031 to 31/03/2031, customer: Ole Brandt (CUS-052)\n"
           "Assistant calls get_turnover_by_customer(start=\"01/03/2031\", end=\"31/03/2031\", customer_id=\"CUS-052\")\n"
           "Tool: [{\"customer_id\": \"CUS-052\", \"name\": \"Ole Brandt\", \"turnover\": 80.0}, "
           "{\"name\": \"Total\", \"turnover\": 80.0}]\n"
@@ -76,7 +79,7 @@ SYSTEM = ("You help with the customers, products, invoices and turnover of an in
           "Example 2b:\n"
           "User: turnover per customer for one product\n"
           "Assistant calls ask_turnover_period()\n"
-          "User: turnover from 01/03/2031 to 31/03/2031, all customers, product: Copper Kettle (PRD-031)\n"
+          "User: turnover per customer from 01/03/2031 to 31/03/2031, all customers, product: Copper Kettle (PRD-031)\n"
           "Assistant calls get_turnover_by_customer(start=\"01/03/2031\", end=\"31/03/2031\", product_id=\"PRD-031\")\n"
           "Tool: [{\"customer_id\": \"CUS-047\", \"name\": \"Mara Quist\", \"turnover\": 49.8}, "
           "{\"name\": \"Total\", \"turnover\": 49.8}]\n"
@@ -88,7 +91,7 @@ SYSTEM = ("You help with the customers, products, invoices and turnover of an in
           "Example 3:\n"
           "User: how did the Copper Kettle sell?\n"
           "Assistant calls ask_product_turnover_period()\n"
-          "User: product turnover from 01/03/2031 to 31/03/2031, product: Copper Kettle\n"
+          "User: turnover per product from 01/03/2031 to 31/03/2031, product: Copper Kettle\n"
           "Assistant calls get_turnover_by_product(start=\"01/03/2031\", end=\"31/03/2031\")\n"
           "Tool: [{\"product_id\": \"PRD-031\", \"name\": \"Copper Kettle\", \"quantity\": 2, \"turnover\": 49.8}]\n"
           "Assistant: Answer: from 01/03/2031 to 31/03/2031 the Copper Kettle earned 49.80 (2 sold).\n"
@@ -132,7 +135,20 @@ SYSTEM = ("You help with the customers, products, invoices and turnover of an in
           "Input: from the form the year 2031 with no customer and no product filter; the tool returned the 12 months "
           "and the total.\n"
           "Analysis: 'all customers' and 'all products' mean no filter, so I called the tool with the year only and "
-          "copied each month and the total.")
+          "copied each month and the total.\n\n"
+          "Example 7:\n"
+          "User: which customers live in Lübeck?\n"
+          "Assistant calls get_customers()\n"
+          "Tool: [{\"id\": \"CUS-047\", \"name\": \"Mara Quist\", \"address\": \"Hafenweg 3, 20457 Hamburg\"}, "
+          "{\"id\": \"CUS-061\", \"name\": \"Jan Ostwald\", \"address\": \"Mühlenstr. 8, 23552 Lübeck\"}, "
+          "{\"id\": \"CUS-068\", \"name\": \"Ida Bremer\", \"address\": \"Holstenweg 2, 23560 Lübeck\"}]\n"
+          "Assistant: Answer: 2 customers live in Lübeck: Jan Ostwald (Mühlenstr. 8, 23552 Lübeck) and Ida Bremer "
+          "(Holstenweg 2, 23560 Lübeck).\n"
+          "Input: the question about Lübeck; get_customers returned 3 customers.\n"
+          "Analysis: get_customers has no filter, so I did not call it again. I went through the 3 addresses myself "
+          "and kept the ones that contain \"Lübeck\": CUS-061 and CUS-068. Mara Quist lives in Hamburg.\n\n"
+          "The ids, names and numbers in the examples are made up. Answer only from what the tools returned in this "
+          "conversation.")
 
 
 def tool(name, description, properties=None, required=()):
@@ -161,7 +177,12 @@ TOOLS = [
          "a question about turnover month by month. Use it when the user did not write a year."),
     tool("get_customers", "All customers: id, name, address."),
     tool("get_products", "All products: id, name, sell_price, buy_price."),
-    tool("get_invoices", "All invoices: id, customer_id, date, due_date, status (paid/unpaid), lines, total."),
+    tool("get_invoices", "All invoices: id, customer_id, date, due_date, status (paid/unpaid), lines, total. "
+         "Give status to get only the paid or only the unpaid invoices.",
+         {"status": {"type": "string", "enum": ["paid", "unpaid"]}}),
+    tool("show_invoices", "Show the user a list of invoices: all of them, or only the paid or only the unpaid ones. "
+         "Use it when the user wants to see or list invoices.",
+         {"status": {"type": "string", "enum": ["paid", "unpaid"]}}),
     tool("get_turnover_by_customer", "Turnover per customer in a period: give start and end dates, or a month "
          "(1-12) and/or a year. No period means the current year. With customer_id only that customer is returned; "
          "with product_id only that product counts. The last row is the Total.",
@@ -215,21 +236,35 @@ def period_from_user(name, args, messages):
     return all(values) and all(value in said for value in values)
 
 
+NO_FILTER = ("", "NULL", "NONE", "ALL", "ALL CUSTOMERS", "ALL PRODUCTS")  # what the bot writes for "nothing chosen"
+
+
+def filter_id(args, key):
+    """The customer_id or product_id the bot gave, or None when nothing was chosen (empty = all)."""
+    value = str(args.get(key) or "").strip().upper()
+    return None if value in NO_FILTER else value
+
+
 def read(name, args):
     """Answer a read tool from the database (Python calculates totals and turnover)."""
+    if name in ("get_customers", "get_products") and args:  # the bot invented a filter: give all records
+        return {"note": f"{name} has no filter, here are all records. Go through them yourself.",
+                "records": read(name, {})}
     if name == "get_customers":
         return storage.load("customers")
     if name == "get_products":
         return storage.load("products")
     if name == "get_invoices":
-        return [{**i, "total": invoices.invoice_total(i)} for i in storage.load("invoices")]
+        status = str(args.get("status") or "").strip().lower()  # "paid", "unpaid" or "" = all
+        status = status if status in invoices.STATUSES else ""  # "null", "all", ... from the bot: all invoices
+        found = [{**i, "total": invoices.invoice_total(i)} for i in storage.load("invoices")
+                 if not status or i["status"] == status]
+        return {"count": len(found), "records": found}  # Python counts, the bot only copies the number
     if name == "get_turnover_by_month":
         year = str(args.get("year", "")).strip()
         if invoices.to_date(f"01/01/{year}") is None:
             return {"error": f"The year must be a 4-digit year like 2026, not '{year}'."}
-        customer_id, product_id = (str(args.get(key) or "").strip().upper() for key in ("customer_id", "product_id"))
-        customer_id = None if customer_id in ("", "ALL", "ALL CUSTOMERS") else customer_id  # the form's "no filter"
-        product_id = None if product_id in ("", "ALL", "ALL PRODUCTS") else product_id
+        customer_id, product_id = filter_id(args, "customer_id"), filter_id(args, "product_id")
         if customer_id and storage.find(storage.load("customers"), customer_id) is None:
             return {"error": f"There is no customer {customer_id}. Take the id from get_customers."}
         if product_id and storage.find(storage.load("products"), product_id) is None:
@@ -243,10 +278,8 @@ def read(name, args):
     if error:
         return {"error": error}
     if name == "get_turnover_by_customer":
-        customer_id, product_id = (str(args.get(key) or "").strip().upper() for key in ("customer_id", "product_id"))
-        customer_id = None if customer_id in ("", "ALL", "ALL CUSTOMERS") else customer_id  # the form's "no filter"
-        product_id = None if product_id in ("", "ALL", "ALL PRODUCTS") else product_id
-        customer = storage.find(storage.load("customers"), customer_id) if customer_id else None
+        customer_id, product_id = filter_id(args, "customer_id"), filter_id(args, "product_id")
+        customer =storage.find(storage.load("customers"), customer_id) if customer_id else None
         if customer_id and customer is None:
             return {"error": f"There is no customer {customer_id}. Take the id from get_customers."}
         if product_id and storage.find(storage.load("products"), product_id) is None:
@@ -256,7 +289,51 @@ def read(name, args):
             rows = [r for r in rows if r["customer_id"] == customer_id] or \
                    [{"customer_id": customer_id, "name": customer["name"], "turnover": 0.0}]
         return rows + [{"name": "Total", "turnover": round(sum(r["turnover"] for r in rows), 2)}]
-    return reports.turnover_by_product(start, end)
+    rows = reports.turnover_by_product(start, end)
+    return rows + [{"name": "Total", "turnover": round(sum(r["turnover"] for r in rows), 2)}]
+
+
+def list_invoices(status=""):
+    """The text for show_invoices: one line per invoice (paid, unpaid or all), written by Python, not the bot."""
+    status = str(status or "").strip().lower()
+    status = status if status in invoices.STATUSES else ""  # "null", "all", ... from the bot: all invoices
+    all_customers = storage.load("customers")
+    found = [i for i in storage.load("invoices") if not status or i["status"] == status]
+    lines = [f"{i['id']} | {storage.find(all_customers, i['customer_id'])['name']} | {i['date']} | "
+             f"due {i['due_date']} | {i['status']} | {invoices.invoice_total(i):.2f}" for i in found]
+    return "\n".join(lines + [f"{len(found)} {status + ' ' if status else ''}invoices."])
+
+
+def form_turnover(message):
+    """Answer the website's turnover forms (static/app.js) in Python, without the bot: the form already gives the
+    period and the chosen customer/product, and the bot copied the ids wrong (customer_id="get_customers") or
+    dropped the month table. Returns the answer text, or None if the message is not a form message."""
+    monthly = re.fullmatch(r"monthly turnover for (\d{4}), (.+)", message)
+    match = monthly or re.fullmatch(r"turnover per (customer|product) from (\S+) to (\S+), (.+)", message)
+    if not match:
+        return None
+    rest = match.groups()[-1]
+    names = dict(re.findall(r"(customer|product): (.+?)(?: \([A-Z]+-\d+\))?(?=, |$)", rest))  # nothing chosen = all
+    ids = {key: next((r["id"] for r in storage.load(key + "s") if r["name"] == name), None)
+           for key, name in names.items()}
+    scope = "".join(f", {key} {name}" for key, name in names.items())
+    if monthly:  # all 12 months, also those with 0, like the table in the requirements
+        year = monthly[1]
+        rows = reports.turnover_by_month(year, ids.get("customer"), ids.get("product"))
+        found = ", ".join(f"{calendar.month_name[row['month']]} {row['turnover']:.2f}" for row in rows)
+        return f"turnover in {year}{scope}: {found}, total {sum(row['turnover'] for row in rows):.2f}."
+    kind, start, end, rest = match.groups()
+    error = reports.check_period(start, end)
+    if error:
+        return error
+    if kind == "customer":
+        rows = [row for row in reports.turnover_by_customer(start, end, ids.get("product"))
+                if not ids.get("customer") or row["customer_id"] == ids["customer"]]
+    else:
+        rows = [row for row in reports.turnover_by_product(start, end, ids.get("customer"))
+                if not ids.get("product") or row["product_id"] == ids["product"]]
+    found = ", ".join(f"{row['name']} {row['turnover']:.2f}" for row in rows) or "no turnover"
+    return f"from {start} to {end}{scope}: {found}, total {sum(row['turnover'] for row in rows):.2f}."
 
 
 def propose(name, args):
@@ -288,6 +365,12 @@ def converse(conversation_id, message):
     if not messages:
         messages.append({"role": "system", "content": SYSTEM})
     messages.append({"role": "user", "content": message})
+    answer = form_turnover(message)
+    if answer:  # the website's turnover form: Python answers, the bot never copies the ids
+        messages.append({"role": "assistant", "content": answer})
+        return {"conversation_id": conversation_id, "reply": answer}
+    if "turnover" in message.lower() and not message.lower().startswith("show me"):
+        messages[-1]["content"] = "show me " + message  # "turnover by customer" opened no form, "show me turnover by customer" does
     proposal, reply, used = None, {}, []
     for _ in range(MAX_ROUNDS):
         reply = chat(messages)
@@ -297,18 +380,25 @@ def converse(conversation_id, message):
             break
         for call in calls:
             name, args = call["function"]["name"], call["function"].get("arguments") or {}
-            if name in FORM_FOR and not period_from_user(name, args, messages):
-                name = FORM_FOR[name]  # period invented or missing: Python shows the form instead of guessing
+            if name in FORM_FOR:  # a turnover question in free text: always the form, Python answers what it sends
+                name = FORM_FOR[name]
             if name in UI_TOOLS:  # a UI tool: the browser shows a form, the user's answer comes back as a message
                 ui, question = UI_TOOLS[name]
                 messages.append({"role": "tool", "content": "The form is shown to the user. Wait for the answer."})
                 messages.append({"role": "assistant", "content": question})
                 return {"conversation_id": conversation_id, "reply": question, "ui": [ui], "open": True}
+            if name == "show_invoices":  # Python writes the list itself, the bot never copies it
+                text = list_invoices(args.get("status"))
+                messages.append({"role": "tool", "content": text})
+                messages.append({"role": "assistant", "content": text})  # the history shows what the user saw
+                return {"conversation_id": conversation_id, "reply": text}
             if name.startswith("get_"):
                 data = read(name, args)
                 content = json.dumps(data, ensure_ascii=False)
                 used.append(f"{name}({', '.join(f'{k}={v}' for k, v in args.items() if v)}) -> "
-                            + (f"{len(data)} records" if isinstance(data, list) else data.get("error", "")))
+                            + (f"{len(data)} records" if isinstance(data, list) else
+                               f"{len(data['records'])} records" + (" (no filter)" if "note" in data else "")
+                               if "records" in data else data.get("error", "")))
             else:
                 error, proposal = propose(name, args)
                 content = f"Not possible: {error}" if error else \

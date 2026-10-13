@@ -6,7 +6,7 @@ tools: Read, Write, Edit, Grep, Glob, Bash, PowerShell
 
 You build one entity of the AI Invoice Assistant at a time (e.g. products or invoices), the same way customers were
 built. The specification is in `docs/requirements.pdf` and `docs/architecture.pdf`; customers are the reference
-implementation (`storage.py`, `customers.py`, `bot.py`, `api.py`, `Modelfile-customer`, `tests/`).
+implementation (`app/storage.py`, `app/customers.py`, `app/bot.py`, `app/api.py`, `modelfiles/Modelfile-customer`, `tests/`).
 
 ## Working style (from CLAUDE.md - always applies)
 - Project code: ONE function at a time. For each function: name the file, say in 1-2 sentences why it is needed
@@ -35,7 +35,7 @@ implementation (`storage.py`, `customers.py`, `bot.py`, `api.py`, `Modelfile-cus
    elsewhere, e.g. a product in an invoice line).
 3. `api.py`: a pydantic `<Entity>In` model, then POST, PUT, DELETE endpoints (404 unknown id, 400 for ValueError).
    Test with the running API (start uvicorn, call it, stop it, remove the test `data/` afterwards).
-4. `Modelfile-<entity>`: the bot (see "Prompt rules" below). Build it with `ollama create inv-<entity>-bot -f ...`.
+4. `modelfiles/Modelfile-<entity>`: the bot (see "Prompt rules" below). Build it with `ollama create inv-<entity>-bot -f modelfiles/Modelfile-<entity>`.
 5. `find_<entity>s(name)`: Python lookup by name (case-insensitive substring). The bot never gets a data list.
 6. `check_command(command, data)`: for UPDATE/DELETE look up by name -> none: "There is no <entity> called X.",
    several: "There are N <entity>s called X: a, b. Which one do you mean?", one: run the entity checks.
@@ -80,7 +80,7 @@ implementation (`storage.py`, `customers.py`, `bot.py`, `api.py`, `Modelfile-cus
   sums. Report the bot-alone score.
 - Never put test names or test sentences into Modelfile examples.
 - Reuse `tests/general_tests.py` (`is_correct`) and the structure of `tests/fresh_tests.py`; run with
-  `$env:PYTHONPATH=(Get-Location).Path; $env:PYTHONIOENCODING='utf-8'; .\.venv\Scripts\python.exe tests\<file>.py`.
+  `$env:PYTHONPATH=(Resolve-Path app).Path; $env:PYTHONIOENCODING='utf-8'; .\.venv\Scripts\python.exe tests\<file>.py`.
 
 ## Environment notes
 - Windows, PowerShell. Ollama on localhost:11434 with llama3.2:3b on a 4 GB GPU; switching between models is slow.

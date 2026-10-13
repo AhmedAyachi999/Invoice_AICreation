@@ -1,5 +1,5 @@
 """Fill the empty database with test data: similar names, similar products, paid and unpaid invoices.
-Usage: python tests\seed_data.py (only on an empty database)"""
+Usage: python tests/seed_data.py (only on an empty database)"""
 import customers
 import invoices
 import products

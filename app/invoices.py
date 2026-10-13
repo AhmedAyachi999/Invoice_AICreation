@@ -98,11 +98,13 @@ def update_invoice(invoice_id, data):
 
 
 def delete_invoice(invoice_id):
-    """Delete an invoice; return it, or None if the number doesn't exist."""
+    """Delete an invoice; return it, None if the number doesn't exist, ValueError if it is paid."""
     invoices = storage.load("invoices")
     invoice = storage.find(invoices, invoice_id)
     if invoice is None:
         return None
+    if invoice["status"] == "paid":
+        raise ValueError(f"Invoice {invoice_id} cannot be deleted: it is paid.")
     invoices.remove(invoice)
     storage.save("invoices", invoices)
     return invoice
@@ -155,12 +157,15 @@ def check_command(command, data):
         return error or check_invoice(invoice)
     if command not in ("UPDATE_INVOICE", "DELETE_INVOICE", "SHOW_INVOICE"):
         return f"{command} is not an invoice command."
-    if storage.find(storage.load("invoices"), str(data.get("id", "")).strip().upper()) is None:
+    invoice = storage.find(storage.load("invoices"), str(data.get("id", "")).strip().upper())
+    if invoice is None:
         return f"There is no invoice {data.get('id')}."
     if command == "UPDATE_INVOICE":
         if data.get("field") not in FIELDS:
             return f"The field must be one of: {', '.join(FIELDS)}."
         return check_invoice(changed_invoice(data))
+    if command == "DELETE_INVOICE" and invoice["status"] == "paid":
+        return f"Invoice {invoice['id']} cannot be deleted: it is paid."
     return None
 
 

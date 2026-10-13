@@ -1,25 +1,34 @@
 # Bot tests
 
-Tests for the customer bot (`inv-customer-bot`) and the judge (`inv-judge-bot`). They need Ollama running and the
-bots built from the Modelfiles in the project root.
+Tests for the Ollama bots. They need Ollama running and the bots built from `modelfiles/` (see the main README).
+Most of them call the bot directly (`bot.chat`), so they measure the bot alone; `target_tests.py` goes through
+`bot.converse`, i.e. with the Python checks.
 
 Run from the project root (PowerShell):
 
 ```
-$env:PYTHONPATH = (Get-Location).Path; $env:PYTHONIOENCODING = "utf-8"
-.\.venv\Scripts\python.exe tests\fresh_tests.py inv-customer-bot     # 20 fresh scenarios H1-H20, no judge
-.\.venv\Scripts\python.exe tests\bot_only.py inv-customer-bot G      # general tests G1-G15, no judge
-.\.venv\Scripts\python.exe tests\bot_only.py inv-customer-bot N      # hold-out scenarios N1-N15, no judge
-.\.venv\Scripts\python.exe tests\general_tests.py                    # G1-G15 with the judge loop
-.\.venv\Scripts\python.exe tests\coach_loop.py                       # N1-N15 with the judge loop
+$env:PYTHONPATH = (Resolve-Path app).Path; $env:PYTHONIOENCODING = "utf-8"
+.\.venv\Scripts\python.exe tests\bot_only.py inv-customer-bot G      # customers: G1-G15 (development set)
+.\.venv\Scripts\python.exe tests\bot_only.py inv-customer-bot N      # customers: N1-N15 (hold-out, never tuned on)
+.\.venv\Scripts\python.exe tests\fresh_tests.py inv-customer-bot     # customers: H1-H20 (fresh names and wording)
+.\.venv\Scripts\python.exe tests\product_tests.py                    # products: P1-P20
+.\.venv\Scripts\python.exe tests\invoice_tests.py                    # invoices: V1-V20
+.\.venv\Scripts\python.exe tests\danger_tests.py                     # 30 dangerous cases (invented records/values)
+.\.venv\Scripts\python.exe tests\target_tests.py                     # 5 cases without a named record, through converse
+.\.venv\Scripts\python.exe tests\seed_data.py                        # fills an EMPTY database with test data
 ```
 
 | File | Content |
 |---|---|
-| `general_tests.py` | G1-G15 (development set used for tuning) and the strict answer check |
-| `new_scenarios.py` | N1-N15 (hold-out set, never used for tuning) |
-| `fresh_tests.py` | H1-H20 (fresh scenarios, new names and wording) |
-| `results/` | Results of the tuning agent (`dev_*`, `dev2_*`, `holdout*`) from episode 4 |
+| `general_tests.py` | G1-G15 and the strict answer check `is_correct` (also used by the other customer tests) |
+| `new_scenarios.py` | N1-N15 |
+| `bot_only.py`, `fresh_tests.py` | Run the customer sets above against a bot |
+| `product_tests.py`, `invoice_tests.py` | Product and invoice sets |
+| `danger_tests.py` | Danger set: a case passes if there is no command, or every value comes from the message |
+| `target_tests.py` | Messages that name no record; Python must ask instead of proposing |
+| `seed_data.py` | Test data (similar names, paid and unpaid invoices) for an empty database |
 
-The checks are automatic and partly lenient (addresses are checked by a substring). Results vary by about +-1
-between runs, even at temperature 0.
+`general_tests.py` and `new_scenarios.py` also contain the old judge loop from episode 3. The judge bot was dropped,
+so run these sets through `bot_only.py`.
+
+Results vary by about +-1 between runs, even at temperature 0, so important measurements are run twice.

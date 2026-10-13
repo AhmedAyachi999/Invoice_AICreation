@@ -1,5 +1,5 @@
 """Five messages that name no record. The bot may guess one; Python must ask instead (bot.invented_target).
-Usage: python tests\target_tests.py"""
+Usage: python tests/target_tests.py"""
 import bot
 import customers
 import invoices

@@ -41,6 +41,17 @@ async function sendMessage(text) {
       if ((data.ui || []).includes("monthly_turnover")) showMonthlyTurnoverPicker();
       if ((data.ui || []).includes("dates")) showDatePicker();
       if ((data.ui || []).includes("lines")) showLinePicker();
+      if ((data.ui || []).includes("invoice")) showInvoicePicker();
+      if ((data.ui || []).includes("status")) showStatusPicker();
+      if ((data.ui || []).includes("edit_product")) showProductEditForm();
+      if ((data.ui || []).includes("new_customer")) {
+        const known = (data.reply.match(/address of (.+?)\?/) || [])[1] || "";  // "What is the address of Bob?" -> "Bob"
+        showCustomerForm(known);
+      }
+      if ((data.ui || []).includes("new_product")) {
+        const known = (data.reply.match(/price of (.+?)\?/) || [])[1] || "";  // "What is the sell price of X?" -> "X"
+        showProductForm(known);
+      }
     }
   } catch (error) {
     waiting.remove();
@@ -51,7 +62,7 @@ async function sendMessage(text) {
 const COLUMNS = {
   customers: ["id", "name", "address"],
   products: ["id", "name", "sell_price", "buy_price"],
-  invoices: ["id", "customer_id", "date", "due_date", "status"],
+  invoices: ["id", "customer_id", "date", "due_date", "status", "total"],
 };
 
 async function loadList() {
@@ -156,6 +167,133 @@ async function showRecordPicker(kind) {
   messages.scrollTop = messages.scrollHeight;
 }
 
+function showStatusPicker() {
+  /* Paid or unpaid for a new invoice: two buttons; the choice is sent to the invoice bot as "paid" or "unpaid". */
+  const box = document.createElement("div");
+  box.className = "message system date-picker";
+  box.innerHTML = `<button data-status="paid">Paid</button> <button data-status="unpaid">Unpaid</button>`;
+  box.querySelectorAll("button").forEach(button => button.onclick = () => {
+    box.remove();
+    sendMessage(button.dataset.status);
+  });
+  const messages = document.getElementById("messages");
+  messages.appendChild(box);
+  messages.scrollTop = messages.scrollHeight;
+}
+
+function showCustomerForm(name = "") {
+  /* A new customer: name and address, both required. The name is filled in if the bot already knows it.
+     "Create customer" sends it to the customer bot in the form it accepts directly:
+     "add customer Lisa Kraus, Kirchweg 2, 48143 Münster". */
+  const box = document.createElement("div");
+  box.className = "message system date-picker";
+  box.innerHTML = `<label>Name <input class="name" placeholder="first and last name"></label>
+                   <label>Address <input class="address" placeholder="street, postcode city"></label>
+                   <button disabled>Create customer</button>`;
+  const nameInput = box.querySelector(".name");
+  const address = box.querySelector(".address");
+  const create = box.querySelector("button");
+  nameInput.value = name;
+  const update = () => { create.disabled = !(nameInput.value.trim() && address.value.trim()); };
+  nameInput.oninput = update;
+  address.oninput = update;
+  create.onclick = () => {
+    box.remove();
+    sendMessage(`add customer ${nameInput.value.trim()}, ${address.value.trim()}`);
+  };
+  const messages = document.getElementById("messages");
+  messages.appendChild(box);
+  messages.scrollTop = messages.scrollHeight;
+}
+
+function showProductForm(name = "") {
+  /* A new product: name and sell price required, buy price optional; prices are numbers >= 0. The name is filled in
+     if the bot already knows it. "Create product" sends it in the form the product bot accepts directly:
+     "new product Monitor 32, sell price 249.00, buy price 180.00" (or "..., no buy price"). */
+  const box = document.createElement("div");
+  box.className = "message system date-picker";
+  box.innerHTML = `<label>Name <input class="name" placeholder="product name"></label>
+                   <label>Sell price <input type="number" class="sell" min="0" step="0.01"></label>
+                   <label>Buy price <input type="number" class="buy" min="0" step="0.01" placeholder="optional"></label>
+                   <button disabled>Create product</button>`;
+  const nameInput = box.querySelector(".name");
+  const sell = box.querySelector(".sell");
+  const buy = box.querySelector(".buy");
+  const create = box.querySelector("button");
+  nameInput.value = name;
+  const price = input => input.value !== "" && Number(input.value) >= 0;
+  const update = () => {
+    create.disabled = !(nameInput.value.trim() && price(sell) && (buy.value === "" || price(buy)));
+  };
+  [nameInput, sell, buy].forEach(input => input.oninput = update);
+  create.onclick = () => {
+    box.remove();
+    const buyPart = buy.value === "" ? "no buy price" : `buy price ${Number(buy.value).toFixed(2)}`;
+    sendMessage(`new product ${nameInput.value.trim()}, sell price ${Number(sell.value).toFixed(2)}, ${buyPart}`);
+  };
+  const messages = document.getElementById("messages");
+  messages.appendChild(box);
+  messages.scrollTop = messages.scrollHeight;
+}
+
+async function showProductEditForm() {
+  /* Change a product's price: choose the product, sell or buy price and the new price (>= 0) in one form, so the
+     bot gets everything in one message it accepts directly: "product: Desk Lamp, new sell price 30.00". */
+  const products = (await (await fetch("/products")).json()).sort((a, b) => a.name.localeCompare(b.name));
+  const listId = "edit-product-list-" + Date.now();
+  const box = document.createElement("div");
+  box.className = "message system date-picker";
+  box.innerHTML = `<label>Product <input class="record" list="${listId}" placeholder="type to search"></label>
+                   <datalist id="${listId}"></datalist>
+                   <label>Change <select class="field"><option value="sell price">sell price</option>
+                                                       <option value="buy price">buy price</option></select></label>
+                   <label>New price <input type="number" class="price" min="0" step="0.01"></label>
+                   <button disabled>Change price</button>`;
+  products.forEach(p => box.querySelector("datalist").appendChild(new Option(
+    `sell ${Number(p.sell_price).toFixed(2)} | buy ${p.buy_price === null ? "-" : Number(p.buy_price).toFixed(2)}`, p.name)));
+  const record = box.querySelector(".record");
+  const field = box.querySelector(".field");
+  const price = box.querySelector(".price");
+  const change = box.querySelector("button");
+  const update = () => {
+    change.disabled = !(products.some(p => p.name === record.value) && price.value !== "" && Number(price.value) >= 0);
+  };
+  [record, price].forEach(input => input.oninput = update);
+  change.onclick = () => {
+    box.remove();
+    sendMessage(`product: ${record.value}, new ${field.value} ${Number(price.value).toFixed(2)}`);
+  };
+  const messages = document.getElementById("messages");
+  messages.appendChild(box);
+  messages.scrollTop = messages.scrollHeight;
+}
+
+async function showInvoicePicker() {
+  /* Choose an existing invoice: a search field with all invoices (newest first), each shown with customer, status
+     and total. Only an existing number can be used; it is sent to the invoice bot as the bare number "INV-001". */
+  const [invoices, customers] = await Promise.all(["invoices", "customers"].map(async kind =>
+    (await fetch(`/${kind}`)).json()));
+  const name = id => (customers.find(c => c.id === id) || {}).name || id;
+  const listId = "invoice-list-" + Date.now();
+  const box = document.createElement("div");
+  box.className = "message system record-picker";
+  box.innerHTML = `<label>Invoice <input class="record" list="${listId}" placeholder="type to search"></label>
+                   <datalist id="${listId}"></datalist>
+                   <button disabled>Use this invoice</button>`;
+  invoices.slice().reverse().forEach(i => box.querySelector("datalist").appendChild(
+    new Option(`${name(i.customer_id)} | ${i.status} | ${Number(i.total).toFixed(2)}`, i.id)));
+  const input = box.querySelector(".record");
+  const use = box.querySelector("button");
+  input.oninput = () => { use.disabled = !invoices.some(i => i.id === input.value); };
+  use.onclick = () => {
+    box.remove();
+    sendMessage(input.value);
+  };
+  const messages = document.getElementById("messages");
+  messages.appendChild(box);
+  messages.scrollTop = messages.scrollHeight;
+}
+
 async function showTurnoverPicker(kind) {
   /* Turnover question per customer or per product (kind "customer" / "product"): start and end date (the end not
      before the start) and optionally one customer or product (empty = all). "Show turnover" sends it to the bot as
@@ -172,18 +310,17 @@ async function showTurnoverPicker(kind) {
                    <datalist id="${listId}"></datalist>
                    <button disabled>Show turnover</button>`;
   records.forEach(r => box.querySelector("datalist").appendChild(new Option(hint(r), r.name)));
-  // Turnover per customer can also be limited to one product (sent with its id, so the bot never looks it up).
-  const products = kind === "customer"
-    ? (await (await fetch("/products")).json()).sort((a, b) => a.name.localeCompare(b.name)) : [];
-  let product = null;
-  if (kind === "customer") {
-    const productList = `${listId}-products`;
-    const label = document.createElement("label");
-    label.innerHTML = `Product <input class="product" list="${productList}" placeholder="all products"><datalist id="${productList}"></datalist>`;
-    products.forEach(p => label.querySelector("datalist").appendChild(new Option(`sell price ${Number(p.sell_price).toFixed(2)}`, p.name)));
-    box.insertBefore(label, box.querySelector("button"));
-    product = label.querySelector(".product");
-  }
+  // Turnover per customer can also be limited to one product, turnover per product to one customer
+  // (sent with its id, so the bot never looks it up).
+  const other = kind === "customer" ? "product" : "customer";
+  const extras = (await (await fetch(`/${other}s`)).json()).sort((a, b) => a.name.localeCompare(b.name));
+  const extraHint = r => other === "customer" ? r.address : `sell price ${Number(r.sell_price).toFixed(2)}`;
+  const extraList = `${listId}-${other}s`;
+  const extraLabel = document.createElement("label");
+  extraLabel.innerHTML = `${other[0].toUpperCase() + other.slice(1)} <input class="extra" list="${extraList}" placeholder="all ${other}s"><datalist id="${extraList}"></datalist>`;
+  extras.forEach(r => extraLabel.querySelector("datalist").appendChild(new Option(extraHint(r), r.name)));
+  box.insertBefore(extraLabel, box.querySelector("button"));
+  const extra = extraLabel.querySelector(".extra");
   const start = box.querySelector(".start");
   const end = box.querySelector(".end");
   const record = box.querySelector(".record");
@@ -192,21 +329,21 @@ async function showTurnoverPicker(kind) {
     end.min = start.value;
     if (end.value && start.value && end.value < start.value) end.value = "";
     const recordOk = record.value === "" || records.some(r => r.name === record.value);
-    const productOk = !product || product.value === "" || products.some(p => p.name === product.value);
-    show.disabled = !(start.value && end.value && recordOk && productOk);
+    const extraOk = extra.value === "" || extras.some(r => r.name === extra.value);
+    show.disabled = !(start.value && end.value && recordOk && extraOk);
   };
   start.onchange = update;
   end.onchange = update;
   record.oninput = update;
-  if (product) product.oninput = update;
+  extra.oninput = update;
   show.onclick = () => {
     box.remove();
     const picked = records.find(r => r.name === record.value);  // sent with its id, so the bot never looks it up
     const which = picked ? `${kind}: ${picked.name}${kind === "customer" ? ` (${picked.id})` : ""}` : `all ${kind}s`;
-    const prefix = kind === "product" ? "product turnover" : "turnover";
-    const chosen = product && products.find(p => p.name === product.value);
-    const productPart = kind === "customer" ? `, ${chosen ? `product: ${chosen.name} (${chosen.id})` : "all products"}` : "";
-    sendMessage(`${prefix} from ${toDisplayDate(start.value)} to ${toDisplayDate(end.value)}, ${which}${productPart}`);
+    const prefix = `turnover per ${kind}`;  // names the kind, so the bot picks the right tool
+    const chosen = extras.find(r => r.name === extra.value);
+    const extraPart = chosen ? `, ${other}: ${chosen.name} (${chosen.id})` : "";  // nothing chosen: no filter
+    sendMessage(`${prefix} from ${toDisplayDate(start.value)} to ${toDisplayDate(end.value)}, ${which}${extraPart}`);
   };
   const messages = document.getElementById("messages");
   messages.appendChild(box);

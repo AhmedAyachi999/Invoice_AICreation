@@ -1,0 +1,81 @@
+OPEN PROBLEMS - handoff summary
+Last update: 13/10/2026
+Nothing of the work since commit 77bd8df (Episode 7) is committed yet.
+Server: uvicorn WITHOUT --reload -> restart it after every Python change. Frontend cache: app.js?v=19 in index.html.
+Real database data/invoices.db: INV-002 was deleted by hand during tests.
+
+==================================================================================================
+A. STILL OPEN (most important first)
+==================================================================================================
+
+1. SOLVED 13/10/2026 (assistant.form_turnover) - Turnover form: "all customers" + one product fails
+   FORM: turnover per customer from 01/09/2026 to 31/10/2026, all customers, product: Computer (PRD-011)
+   CALL: get_turnover_by_customer {"customer_id": "get_customers", "start": "01/09/2026", "end": "31/10/2026"}
+   BOT : Answer: There is no customer. Please choose a customer.
+   -> the bot puts a tool name as customer_id and drops product_id.
+   Other 5 turnover form variants are correct (tested 13/10/2026).
+   PROPOSED FIX (not done): Python reads the form message itself (period, ids in "(PRD-011)") and calls the
+   report directly, no bot in between - like show_invoices. New function assistant.form_turnover + 2 lines in converse.
+
+2. SOLVED 13/10/2026 (form_turnover) - Turnover per product, one product: answer adds the overall total
+   FORM: turnover per product ..., product: Desk Lamp
+   BOT : "the Desk Lamp earned 59.80 (2 sold), total 3092.30"   (3092.30 = all products)
+   Cause: the bot passes product_id "Desk Lamp" (a name), get_turnover_by_product ignores it, and the new
+   Python "Total" row is the total of all products. Fix 1 above would fix this too.
+
+3. One question, 3413 identical tool calls (seen once, 11/10/2026)
+   "what is the address of Mara Quist?" -> round 1: 3413x get_customers {}. Run stopped by hand after 5 min.
+   MAX_ROUNDS limits rounds, not calls inside one round. Not known if it repeats.
+   Possible fixes: skip identical calls (same tool + same args), cap calls per round, num_predict.
+
+4. A paid invoice can still be deleted in 2 steps
+   delete is blocked for paid (invoices.delete_invoice + check_command), but: set it to unpaid, then delete.
+   Not decided whether this is acceptable.
+
+5. Invoice bot asks again for information the user already gave
+   Mitigated by the forms (chooser, Paid/Unpaid buttons, dates, lines), not fixed in the bot.
+
+6. Product rename after the chooser is unreliable
+   The edit_product form therefore only covers prices (sell/buy). Rename works only by free text
+   ("the name X is a typo, it is Y").
+
+7. Assistant sometimes invents filters / answer format incomplete
+   e.g. only "Analysis:" without "Answer:". Less frequent since Example 7 and the Python filters.
+
+8. Negative-price check is a regex in router.py: NEGATIVE_PRICE = r"-\s*\d"
+   False positive possible for product names with a hyphen + digit (e.g. "USB-3 Cable").
+
+9. "how many invoices are open?" -> 11 (wrong). User said: forget it for now.
+
+10. "delete all unpaid invoices" -> not supported. User said: unlikely, skip.
+
+==================================================================================================
+B. SOLVED (since Episode 7) - so you don't redo them
+==================================================================================================
+- Paid invoice not deletable: invoices.delete_invoice raises ValueError, check_command returns the message,
+  api.remove_invoice -> HTTP 400.
+- Router: chain of thought (Intention / To do that / So) + "Route: <word>"; route() parses only after "route:".
+  "list unpaid invoices", "show the invoices of X" -> question. Modelfile-router rebuilt.
+- Counting paid/unpaid: get_invoices has a status param ("paid"/"unpaid"), Python filters and returns a count;
+  unknown status ("null") = all. New tool show_invoices: Python writes the list itself as the reply.
+- Synonyms open/outstanding/pending = unpaid, settled/cleared = paid (SYSTEM in assistant.py).
+- Example 8 removed (its fake ids INV-031/034, CUS-047 leaked into answers). SYSTEM ends with
+  "The ids, names and numbers in the examples are made up."
+- Name chooser: exact match first, then "contains" (Lamp vs Desk Lamp).
+- Customers around Dortmund: Example 7 (bot filters a list itself); get_customers/get_products with args
+  return a note "no filter, go through them yourself".
+- Forms instead of free text (static/app.js): invoice chooser (sends bare id "INV-003"), Paid/Unpaid buttons,
+  new customer form, new product form ("new product X, sell price A, buy price B"), product price edit form.
+  router.py decides which form to show from the bot's question (result["ui"]).
+- Negative price: router.py catches it before the bot and reopens the form with "A price can't be negative."
+  (A Modelfile-product rule was tried and reverted: it broke other cases.)
+- Turnover forms (per customer / per product) answered by Python: assistant.form_turnover, no bot (T1-T6 pass).
+- Turnover with nothing selected = all: filter_id()/NO_FILTER in assistant.py ("", null, all ... -> no filter),
+  product turnover gets a Python "Total" row, form message "turnover per customer from ... to ..., all customers".
+
+==================================================================================================
+C. HOW TO TEST
+==================================================================================================
+- Scenario runner in the old session scratchpad (scenarios.py): calls router.converse and simulates form clicks.
+  Last full run: 14 scenarios (all except "delete all unpaid" and "sell price -5"), all passed with forms.
+- Rule: show bot output verbatim first, judge only when asked.

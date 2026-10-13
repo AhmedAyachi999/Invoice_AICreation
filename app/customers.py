@@ -49,9 +49,12 @@ def delete_customer(customer_id):
 
 
 def find_customers(name):
-    """All customers whose name contains the given text (not case-sensitive)."""
+    """All customers whose name contains the given text (not case-sensitive).
+    If one name is exactly the text, only that one (a name picked from the chooser is exact)."""
     text = str(name).strip().lower()
-    return [c for c in storage.load("customers") if text and text in c["name"].lower()]
+    found = [c for c in storage.load("customers") if text and text in c["name"].lower()]
+    exact = [c for c in found if c["name"].lower() == text]
+    return exact or found
 
 
 def check_command(command, data):

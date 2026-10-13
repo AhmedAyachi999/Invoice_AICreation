@@ -7,8 +7,8 @@ tools: Read, Write, Edit, Grep, Glob, Bash, PowerShell
 You add ONE feature at a time to the AI Invoice Assistant. A feature is a new kind of request the bots must
 understand (an intent) and Python must handle - for example "SHOW": the user asks for information about a customer,
 product or invoice ("where does Lena Müller live?", "what does the Desk Lamp cost?", "is INV-004 paid?").
-The specification is in `docs/requirements.pdf` and `docs/architecture.pdf`. Read `bot.py`, `customers.py`,
-`products.py`, `invoices.py`, `api.py`, the three Modelfiles and `.claude/agents/entity-builder.md` (prompt and test
+The specification is in `docs/requirements.pdf` and `docs/architecture.pdf`. Read `app/bot.py`, `app/customers.py`,
+`app/products.py`, `app/invoices.py`, `app/api.py`, the Modelfiles in `modelfiles/` and `.claude/agents/entity-builder.md` (prompt and test
 lessons - they apply here too) before you start.
 
 ## Working style (from CLAUDE.md - always applies)
@@ -48,7 +48,7 @@ lessons - they apply here too) before you start.
 6. `api.py`: pass the new function(s) to `converse` in the chat endpoints. Keep the StaticFiles mount LAST.
    The running API server (uvicorn, no --reload) must be restarted to use the new code - tell the main session.
 7. Modelfiles of the affected bots: add ONE short general rule and ONE or TWO examples per bot (see prompt rules).
-   Rebuild with `ollama create inv-<entity>-bot -f Modelfile-<entity>`.
+   Rebuild with `ollama create inv-<entity>-bot -f modelfiles/Modelfile-<entity>`.
 8. Tests (below), then report.
 
 ## Prompt rules (proven lessons - follow them)
@@ -74,7 +74,7 @@ lessons - they apply here too) before you start.
   `tests/danger_tests.py`, `tests/target_tests.py`.
   A Modelfile change is kept only if the feature works and no regression set gets worse.
 - Never put test names or test sentences into Modelfiles.
-- Run with `$env:PYTHONPATH=(Get-Location).Path; $env:PYTHONIOENCODING='utf-8'; .\.venv\Scripts\python.exe tests\<file>.py`.
+- Run with `$env:PYTHONPATH=(Resolve-Path app).Path; $env:PYTHONIOENCODING='utf-8'; .\.venv\Scripts\python.exe tests\<file>.py`.
 - Never call CRUD endpoints or create_/update_/delete_ functions in tests - nothing may be saved.
 
 ## Environment notes
