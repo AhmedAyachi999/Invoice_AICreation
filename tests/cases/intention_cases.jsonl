@@ -1,0 +1,23 @@
+{"id": "intent-create-01", "messages": ["add a customer named Lena Berg"], "category": "create", "expected": "customer", "difficulty": "easy"}
+{"id": "intent-create-02", "messages": ["new product Tea Cup, sell price 4.50"], "category": "create", "expected": "product", "difficulty": "easy"}
+{"id": "intent-create-03", "messages": ["make an invoice for Karl Becker"], "category": "create", "expected": "invoice", "difficulty": "easy"}
+{"id": "intent-change-01", "messages": ["Karl Becker moved to Bahnhofstr. 1, 53111 Bonn"], "category": "change", "expected": "customer", "difficulty": "medium"}
+{"id": "intent-change-02", "messages": ["the Desk Lamp costs 32 now"], "category": "change", "expected": "product", "difficulty": "medium"}
+{"id": "intent-change-03", "messages": ["INV-004 is paid"], "category": "change", "expected": "invoice", "difficulty": "medium"}
+{"id": "intent-delete-01", "messages": ["remove Tim Wagner"], "category": "delete", "expected": "customer", "difficulty": "medium"}
+{"id": "intent-delete-02", "messages": ["delete the USB Cable 1m"], "category": "delete", "expected": "product", "difficulty": "easy"}
+{"id": "intent-delete-03", "messages": ["cancel invoice INV-012"], "category": "delete", "expected": "invoice", "difficulty": "medium"}
+{"id": "intent-read-01", "messages": ["where does Karl Becker live?"], "category": "read", "expected": "question", "difficulty": "easy"}
+{"id": "intent-read-02", "messages": ["what does the Desk Lamp cost?"], "category": "read", "expected": "question", "difficulty": "easy"}
+{"id": "intent-read-03", "messages": ["list unpaid invoices"], "category": "read", "expected": "question", "difficulty": "medium"}
+{"id": "intent-read-04", "messages": ["is INV-011 paid?"], "category": "read", "expected": "question", "difficulty": "medium"}
+{"id": "intent-turnover-01", "messages": ["turnover by customer"], "category": "turnover", "expected": "question", "difficulty": "easy"}
+{"id": "intent-turnover-02", "messages": ["revenue per product"], "category": "turnover", "expected": "question", "difficulty": "medium"}
+{"id": "intent-turnover-03", "messages": ["monthly income"], "category": "turnover", "expected": "question", "difficulty": "hard"}
+{"id": "intent-missing-01", "messages": ["add a customer"], "category": "missing_info", "expected": "customer", "difficulty": "easy"}
+{"id": "intent-missing-02", "messages": ["change a product"], "category": "missing_info", "expected": "product", "difficulty": "easy"}
+{"id": "intent-missing-03", "messages": ["delete an invoice"], "category": "missing_info", "expected": "invoice", "difficulty": "easy"}
+{"id": "intent-readname-01", "messages": ["show the invoices of Felix Hartmann"], "category": "read_with_name", "expected": "question", "difficulty": "hard"}
+{"id": "intent-readname-02", "messages": ["which customers live in Dortmund?"], "category": "read_with_name", "expected": "question", "difficulty": "medium"}
+{"id": "intent-offtopic-01", "messages": ["what's the weather today?"], "category": "off_topic", "expected": "none", "difficulty": "easy"}
+{"id": "intent-offtopic-02", "messages": ["tell me a joke"], "category": "off_topic", "expected": "none", "difficulty": "easy"}

@@ -6,7 +6,7 @@ tools: Read, Write, Grep, Glob, Bash, PowerShell
 
 You test the AI Invoice Assistant like a user would. You do not fix anything. You report.
 First read `docs/requirements.pdf`, `app/router.py`, `app/assistant.py`, `app/api.py`, `static/app.js`
-(which messages the forms send) and `tests/open_problems.txt` (known problems: report them, don't hunt for them again).
+(which messages the forms send) and `tests/open_problems.md` (known problems: report them, don't hunt for them again).
 
 ## Rules
 - NEVER use data/invoices.db. Copy it to the scratchpad and set `storage.DB_PATH` to the copy before any call.
@@ -75,5 +75,5 @@ Once with the website form message (from static/app.js), once with free text
 ## Report (end of the run)
 1. A table: scenario | via (form/free text) | PASS/FAIL | expected | got
 2. For each FAIL, the raw exchange
-3. Which FAILs are already in tests/open_problems.txt, and which are new
+3. Which FAILs are already in tests/open_problems.md, and which are new
 Then stop. Do not propose fixes unless asked.

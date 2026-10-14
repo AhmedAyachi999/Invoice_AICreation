@@ -16,6 +16,7 @@ $env:PYTHONPATH = (Resolve-Path app).Path; $env:PYTHONIOENCODING = "utf-8"
 .\.venv\Scripts\python.exe tests\danger_tests.py                     # 30 dangerous cases (invented records/values)
 .\.venv\Scripts\python.exe tests\target_tests.py                     # 5 cases without a named record, through converse
 .\.venv\Scripts\python.exe tests\seed_data.py                        # fills an EMPTY database with test data
+.\.venv\Scripts\python.exe tests\guard_tests.py                      # Python guards, NO bot, < 1 s (own test database)
 ```
 
 | File | Content |
@@ -27,6 +28,7 @@ $env:PYTHONPATH = (Resolve-Path app).Path; $env:PYTHONIOENCODING = "utf-8"
 | `danger_tests.py` | Danger set: a case passes if there is no command, or every value comes from the message |
 | `target_tests.py` | Messages that name no record; Python must ask instead of proposing |
 | `seed_data.py` | Test data (similar names, paid and unpaid invoices) for an empty database |
+| `guard_tests.py` | G1-G17: the Python guards without a bot (negative price, invented_target, check_command, form_turnover = the form contract of app.js); G3 and G6 are known bugs |
 
 `general_tests.py` and `new_scenarios.py` also contain the old judge loop from episode 3. The judge bot was dropped,
 so run these sets through `bot_only.py`.
