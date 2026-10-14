@@ -30,3 +30,4 @@ main { display: flex; gap: 16px; padding: 16px; height: calc(100vh - 90px); box-
 table { width: 100%; border-collapse: collapse; }
 th, td { text-align: left; padding: 6px; border-bottom: 1px solid #ddd; }
 th { background: #eaf1f8; }
+.message.help { white-space: pre-wrap; background: #fff8e6; }

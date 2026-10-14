@@ -17,6 +17,7 @@ from pydantic import BaseModel
 import assistant
 import bot
 import customers
+import guide
 import invoices
 import products
 import reports
@@ -298,6 +299,12 @@ def invoice_chat(data: ChatIn):
 def assistant_chat(data: ChatIn):
     """Ask the assistant (bot with tools). Returns its answer, or a proposal to confirm. Never saves."""
     return assistant.converse(data.conversation_id, data.message)
+
+
+@app.post("/help")
+def help_chat(data: ChatIn):
+    """Answer a question about using the software from the user guide (RAG, guide.py). Never saves."""
+    return {"reply": guide.answer(data.message)}
 
 
 # ===================================================================================================================

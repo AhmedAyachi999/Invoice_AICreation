@@ -92,6 +92,32 @@ document.querySelectorAll("#tabs button").forEach(button => {
   button.onclick = () => switchTab(button.dataset.entity);
 });
 
+async function askHelp(text) {
+  /* "Help": answer a question about using this software from the user guide (server: guide.answer). Never saves. */
+  addMessage("You", text);
+  const waiting = addMessage("Help", "…");
+  try {
+    const response = await fetch("/help", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({message: text, conversation_id: null}),
+    });
+    const data = await response.json();
+    waiting.remove();
+    addMessage("Help", response.ok ? data.reply : "Error: " + JSON.stringify(data.detail || data));
+  } catch (error) {
+    waiting.remove();
+    addMessage("System", "The server could not be reached: " + error.message);
+  }
+}
+
+document.getElementById("help-button").onclick = () => {
+  const input = document.getElementById("chat-input");
+  const text = input.value.trim() || "How do I use the chat?";  // empty field: a first overview
+  askHelp(text);
+  input.value = "";
+};
+
 document.getElementById("chat-form").onsubmit = event => {
   event.preventDefault();
   const input = document.getElementById("chat-input");
