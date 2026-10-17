@@ -1,4 +1,4 @@
-import storage
+from core import storage
 
 FIELDS = ["name", "address"]
 

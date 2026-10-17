@@ -7,8 +7,8 @@ tools: Read, Write, Edit, Grep, Glob, Bash, PowerShell
 You add ONE feature at a time to the AI Invoice Assistant. A feature is a new kind of request the bots must
 understand (an intent) and Python must handle - for example "SHOW": the user asks for information about a customer,
 product or invoice ("where does Lena Müller live?", "what does the Desk Lamp cost?", "is INV-004 paid?").
-The specification is in `docs/requirements.pdf` and `docs/architecture.pdf`. Read `app/bot.py`, `app/customers.py`,
-`app/products.py`, `app/invoices.py`, `app/api.py`, the Modelfiles in `modelfiles/` and `.claude/agents/entity-builder.md` (prompt and test
+The specification is in `docs/requirements.pdf` and `docs/architecture.pdf`. Read `app/chat/bot.py`, `app/entities/customers.py`,
+`app/entities/products.py`, `app/entities/invoices.py`, `app/api.py`, the Modelfiles in `modelfiles/` and `.claude/agents/entity-builder.md` (prompt and test
 lessons - they apply here too) before you start.
 
 ## Working style (from CLAUDE.md - always applies)

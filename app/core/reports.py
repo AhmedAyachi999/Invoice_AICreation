@@ -1,8 +1,8 @@
 import calendar
 from datetime import date
 
-import invoices
-import storage
+from core import storage
+from entities import invoices
 
 
 def paid_invoices(start, end):

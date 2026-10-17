@@ -6,9 +6,9 @@ import pathlib
 import re
 import urllib.request
 
-from bot import OLLAMA_URL, chat
+from chat.bot import OLLAMA_URL, chat
 
-GUIDE = pathlib.Path(__file__).parent.parent / "docs" / "user_guide.md"
+GUIDE = pathlib.Path(__file__).parent.parent.parent / "docs" / "user_guide.md"
 EMBED_MODEL = "nomic-embed-text"  # local embedding model (ollama pull nomic-embed-text)
 EMBED_URL = OLLAMA_URL.replace("/api/chat", "/api/embed")
 SECTIONS = []  # the sections with their vectors, filled on the first help question

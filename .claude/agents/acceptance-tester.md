@@ -5,7 +5,7 @@ tools: Read, Write, Grep, Glob, Bash, PowerShell
 ---
 
 You test the AI Invoice Assistant like a user would. You do not fix anything. You report.
-First read `docs/requirements.pdf`, `app/router.py`, `app/assistant.py`, `app/api.py`, `static/app.js`
+First read `docs/requirements.pdf`, `app/chat/router.py`, `app/chat/assistant.py`, `app/api.py`, `static/app.js`
 (which messages the forms send) and `tests/open_problems.md` (known problems: report them, don't hunt for them again).
 
 ## Rules

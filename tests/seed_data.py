@@ -1,9 +1,7 @@
 """Fill the empty database with test data: similar names, similar products, paid and unpaid invoices.
 Usage: python tests/seed_data.py (only on an empty database)"""
-import customers
-import invoices
-import products
-import storage
+from core import storage
+from entities import customers, invoices, products
 
 CUSTOMERS = [
     ("Felix Hartmann", "Seeweg 4, 24103 Kiel"), ("Greta Hartman", "Lindenallee 12, 20259 Hamburg"),

@@ -5,12 +5,9 @@ import json
 import re
 import urllib.request
 
-import customers
-import invoices
-import products
-import reports
-import storage
-from bot import OLLAMA_URL, get_conversation
+from chat.bot import OLLAMA_URL, get_conversation
+from core import reports, storage
+from entities import customers, invoices, products
 
 MODEL = "llama3.2:3b"
 MAX_ROUNDS = 5  # tool calls per user message before the bot has to answer

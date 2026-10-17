@@ -5,16 +5,14 @@ import pathlib
 import runpy
 import tempfile
 
-import storage
+from core import storage
 
 storage.DB_PATH = pathlib.Path(tempfile.mkdtemp()) / "guard.db"  # a new, empty test database
 storage.create_tables()
 runpy.run_path(str(pathlib.Path(__file__).with_name("seed_data.py")))  # fixed data: 12 customers, 10 products, 8 invoices
 
-import assistant
-import bot
-import invoices
-import router
+from chat import assistant, bot, router
+from entities import invoices
 
 USER = lambda text: [{"role": "user", "content": text}]  # a conversation with one user message
 

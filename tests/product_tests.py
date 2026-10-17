@@ -1,7 +1,7 @@
 """20 single-message scenarios for the product bot (bot alone). Usage: python product_tests.py [model]"""
 import sys
 
-import bot
+from chat import bot
 
 # (id, user message, expected)
 #   ("cmd", KEYWORD, {field: expected})  names/fields exact (lower case), prices compared as numbers

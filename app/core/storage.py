@@ -1,7 +1,7 @@
 import sqlite3
 from pathlib import Path
 
-DATA_DIR = Path(__file__).parent.parent / "data"  # data/ in the project root, next to app/
+DATA_DIR = Path(__file__).parent.parent.parent / "data"  # data/ in the project root, next to app/
 DB_PATH = DATA_DIR / "invoices.db"
 
 

@@ -1,7 +1,7 @@
 """20 single-message scenarios for the invoice bot (bot alone). Usage: python invoice_tests.py [model]"""
 import sys
 
-import bot
+from chat import bot
 
 # (id, user message, expected)
 #   ("cmd", KEYWORD, {field: expected})  texts exact (lower case); "lines": list of (product, quantity, unit_price or None)

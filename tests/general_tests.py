@@ -1,7 +1,7 @@
 """General test set: customer bot answers, the judge checks it in a loop (until OK, max 3 rounds)."""
 import re
 
-import bot
+from chat import bot
 
 # (id, user message, expected)
 #   ("cmd", KEYWORD, {"name": exact, other field: exact (field) or contained (address/value)})

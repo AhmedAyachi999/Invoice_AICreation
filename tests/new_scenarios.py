@@ -1,7 +1,7 @@
 """15 new scenarios: customer bot answers, Python checks the answer against the expected result, the judge judges it."""
 import re
 
-import bot
+from chat import bot
 
 # (id, user message, expected) - expected is one of:
 #   ("cmd", KEYWORD, {field: text that must be contained (lower case)})

@@ -8,19 +8,23 @@ saves: it returns a proposal, and the website saves it through the CRUD endpoint
 
 ```
 app/          Python code (FastAPI on 127.0.0.1)
-  api.py        REST API: CRUD endpoints, reports, chat endpoints, serves the website
-  router.py     the single chat: the router bot sends each message to a change bot or to the assistant
-  assistant.py  questions: the bot with tools (read data, turnover forms, proposals for changes)
-  bot.py        talks to Ollama, reads the bot's command, Python guards, converse (change bots)
-  customers.py  per entity: checks, lookup by name, create/update/delete, proposal for the chat
-  products.py
-  invoices.py
-  reports.py    turnover R1-R3 (paid invoices, by due date), no AI
-  storage.py    SQLite: load, save, generate numbers (CUS-001, PRD-001, INV-001)
+  api.py          REST API: CRUD endpoints, reports, chat endpoints, /help, serves the website
+  chat/           everything with bots
+    router.py       the single chat: the router bot sends each message to a change bot or to the assistant
+    assistant.py    questions: the bot with tools (read data, turnover forms, proposals for changes)
+    bot.py          talks to Ollama, reads the bot's command, Python guards, converse (change bots)
+    guide.py        Help button: answers from docs/user_guide.md (RAG, local embeddings)
+  entities/       per entity: checks, lookup by name, create/update/delete, proposal for the chat
+    customers.py
+    products.py
+    invoices.py
+  core/           no AI
+    reports.py      turnover R1-R3 (paid invoices, by due date)
+    storage.py      SQLite: load, save, generate numbers (CUS-001, PRD-001, INV-001)
 modelfiles/   the bots: Modelfile-customer, -product, -invoice, -router
 static/       the website (one chat, choosers, tables)
 tests/        bot tests and test data (see tests/README.md)
-docs/         requirements, architecture, model choice, test scenarios (PDF)
+docs/         requirements, architecture, model choice, test scenarios (PDF), user_guide.md (Help)
 data/         the database invoices.db (created on first start, not in git)
 ```
 

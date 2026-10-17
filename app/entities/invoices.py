@@ -1,8 +1,7 @@
 from datetime import datetime
 
-import customers
-import products
-import storage
+from core import storage
+from entities import customers, products
 
 STATUSES = ["paid", "unpaid"]
 FIELDS = ["date", "due_date", "status"]

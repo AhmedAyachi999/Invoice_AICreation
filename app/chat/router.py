@@ -4,11 +4,8 @@ stay with the bot that asked."""
 import re
 import uuid
 
-import assistant
-import bot
-import customers
-import invoices
-import products
+from chat import assistant, bot
+from entities import customers, invoices, products
 
 ROUTER = "inv-router-bot"
 BOTS = {"customer": ("inv-customer-bot", customers), "product": ("inv-product-bot", products),
@@ -31,6 +28,7 @@ def converse(conversation_id, message):
         conversation_id = str(uuid.uuid4())
         SESSIONS[conversation_id] = {"last": None, "waiting": False, "ids": {}}
     session = SESSIONS[conversation_id]
+    # Get entity of last session or try to find it
     entity = session["last"] if session["waiting"] else route(message)
     if entity is None:
         return {"conversation_id": conversation_id,

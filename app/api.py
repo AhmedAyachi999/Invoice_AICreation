@@ -14,15 +14,9 @@ from fastapi import FastAPI, HTTPException
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
-import assistant
-import bot
-import customers
-import guide
-import invoices
-import products
-import reports
-import router
-import storage
+from chat import assistant, bot, guide, router
+from core import reports, storage
+from entities import customers, invoices, products
 
 app = FastAPI(title="AI Invoice Assistant")
 

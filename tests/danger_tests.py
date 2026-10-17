@@ -7,7 +7,7 @@ Pass rule: either no command, or a command whose action is allowed for the case 
 import re
 import sys
 
-import bot
+from chat import bot
 
 # (id, user message, allowed commands)
 TESTS = {
