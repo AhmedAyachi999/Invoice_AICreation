@@ -177,9 +177,10 @@ TOOLS = [
     tool("get_invoices", "All invoices: id, customer_id, date, due_date, status (paid/unpaid), lines, total. "
          "Give status to get only the paid or only the unpaid invoices.",
          {"status": {"type": "string", "enum": ["paid", "unpaid"]}}),
-    tool("show_invoices", "Show the user a list of invoices: all of them, or only the paid or only the unpaid ones. "
-         "Use it when the user wants to see or list invoices.",
-         {"status": {"type": "string", "enum": ["paid", "unpaid"]}}),
+    tool("show_invoices", "Show the user a list of invoices: all of them, only the paid or only the unpaid ones, "
+         "or one invoice by its number. Use it when the user wants to see or list invoices, or asks about one "
+         "invoice, e.g. if it is paid.",
+         {"status": {"type": "string", "enum": ["paid", "unpaid"]}, "invoice_id": INVOICE_ID}),
     tool("get_turnover_by_customer", "Turnover per customer in a period: give start and end dates, or a month "
          "(1-12) and/or a year. No period means the current year. With customer_id only that customer is returned; "
          "with product_id only that product counts. The last row is the Total.",
@@ -290,15 +291,20 @@ def read(name, args):
     return rows + [{"name": "Total", "turnover": round(sum(r["turnover"] for r in rows), 2)}]
 
 
-def list_invoices(status=""):
-    """The text for show_invoices: one line per invoice (paid, unpaid or all), written by Python, not the bot."""
-    status = str(status or "").strip().lower()
+def list_invoices(status="", invoice_id=""):
+    """The text for show_invoices: one line per invoice (paid, unpaid or all), written by Python, not the bot.
+    With invoice_id only that invoice, whatever its status (the user wants to see the status)."""
+    invoice_id = str(invoice_id or "").strip().upper()
+    status = "" if invoice_id else str(status or "").strip().lower()
     status = status if status in invoices.STATUSES else ""  # "null", "all", ... from the bot: all invoices
     all_customers = storage.load("customers")
-    found = [i for i in storage.load("invoices") if not status or i["status"] == status]
+    found = [i for i in storage.load("invoices")
+             if (not status or i["status"] == status) and (not invoice_id or i["id"] == invoice_id)]
+    if invoice_id and not found:
+        return f"There is no invoice {invoice_id}."
     lines = [f"{i['id']} | {storage.find(all_customers, i['customer_id'])['name']} | {i['date']} | "
              f"due {i['due_date']} | {i['status']} | {invoices.invoice_total(i):.2f}" for i in found]
-    return "\n".join(lines + [f"{len(found)} {status + ' ' if status else ''}invoices."])
+    return "\n".join(lines + ([] if invoice_id else [f"{len(found)} {status + ' ' if status else ''}invoices."]))
 
 
 def form_turnover(message):
@@ -385,7 +391,7 @@ def converse(conversation_id, message):
                 messages.append({"role": "assistant", "content": question})
                 return {"conversation_id": conversation_id, "reply": question, "ui": [ui], "open": True}
             if name == "show_invoices":  # Python writes the list itself, the bot never copies it
-                text = list_invoices(args.get("status"))
+                text = list_invoices(args.get("status"), args.get("invoice_id"))
                 messages.append({"role": "tool", "content": text})
                 messages.append({"role": "assistant", "content": text})  # the history shows what the user saw
                 return {"conversation_id": conversation_id, "reply": text}

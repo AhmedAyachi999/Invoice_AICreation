@@ -13,7 +13,6 @@ Last update: 16/10/2026 (code review: rows 19–23; plan `tests/code_check_plan.
 
 | # | Problem | Details | Possible fix |
 |---|---|---|---|
-| 1 | "is INV-011 paid?" → "unpaid" | • INV-011 **is** paid<br>• the bot got the 4 paid invoices and still said no | – |
 | 2 | 3413 identical tool calls | • seen once: "address of Mara Quist?"<br>• `MAX_ROUNDS` limits rounds, not calls | • skip identical calls<br>• cap calls per round |
 | 3 | Paid invoice deletable in 2 steps | • set to unpaid, then delete | • decide if OK |
 | 4 | Tool descriptions outdated | • `ask_*`: "when the user did not write both dates" (now: always the form)<br>• `get_turnover_by_product` has no `customer_id` | • update `TOOLS` |
@@ -42,7 +41,7 @@ Last update: 16/10/2026 (code review: rows 19–23; plan `tests/code_check_plan.
 | Area | What |
 |---|---|
 | Router | • thinks step by step: Intention / To do that / So → `Route:`<br>• `route()` reads only after "route:" |
-| Assistant | • `show_invoices`: Python writes the list<br>• `get_invoices(status)` + count<br>• synonyms open/pending = unpaid, settled = paid<br>• Example 8 removed (fake ids leaked)<br>• "show me" in front of turnover questions<br>• turnover question in free text → always the form |
+| Assistant | • `show_invoices`: Python writes the list<br>• "is INV-011 paid?": `show_invoices(invoice_id)`, Python writes the one line with its status, status filter ignored (17/10, scenario 11a)<br>• `get_invoices(status)` + count<br>• synonyms open/pending = unpaid, settled = paid<br>• Example 8 removed (fake ids leaked)<br>• "show me" in front of turnover questions<br>• turnover question in free text → always the form |
 | Turnover | • `form_turnover`: Python answers all 3 forms, no bot<br>• nothing selected = all<br>• `turnover_by_product(customer_id)` |
 | Checks | • `NEGATIVE_PRICE` ignores a dash inside a name ("USB-3 Cable"), scenarios 10b + 17b (17/10)<br>• paid invoice not deletable (check + HTTP 400)<br>• negative price → form again<br>• name chooser: exact match first |
 | Help (RAG) | • `app/chat/guide.py` + `docs/user_guide.md` (21 sections), Help button → `/help`; router not changed (user decision) |
