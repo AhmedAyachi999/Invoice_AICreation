@@ -115,19 +115,30 @@ BUTTON = re.compile(  # "click the X button", "press X", "the X button"
     r'(?:click|press)(?: on)? (?:the )?"?([\w ]+?)"?(?: button\b|[.,;]|$)|the "?([\w ]+?)"? button', re.I)
 
 
+CANNOT = "I cannot help with that."
+
+
 def scenario_17(run):
-    """Help: "can I export to Excel?" invents no button; "how do I remove a bill?" gives the guide's delete steps."""
+    """Help: a function that doesn't exist gets "I cannot help with that."; real functions asked in other words
+    ("bill", "client", "sales") get a real answer; no invented button."""
     guide = (helpers.ROOT / "docs" / "user_guide.md").read_text(encoding="utf-8").lower()  # a button must be in here
-    for question in ["can I export to Excel?", "how do I remove a bill?"]:
+    for question in ["can I export to Excel?", "how do I remove a bill?", "how do I add a client?",
+                     "where can I see my sales?"]:
         response = helpers.client.post("/help", json={"message": question, "conversation_id": None})
         reply = response.json().get("reply", "")
         run.out(f">>> /help {question}\n    HTTP {response.status_code}\n    reply: {reply!r}")
         answer = reply.split("\n\nFrom the user guide:")[0]
         buttons = [(a or b).strip().lower() for a, b in BUTTON.findall(answer)]
         run.check(f"no invented button {buttons}", all(button in guide for button in buttons))
+        if "export" in question:
+            run.check(f'"{CANNOT}"', answer.strip() == CANNOT)
+        else:
+            run.check(f'a real answer, not "{CANNOT}"', CANNOT not in answer)
         if "bill" in question:
             run.check('delete steps: "delete an invoice" and Yes', "delete an invoice" in answer.lower()
                       and "yes" in answer.lower())
+        if "client" in question:
+            run.check('"add a customer"', "add a customer" in answer.lower())
     return run.done()
 
 

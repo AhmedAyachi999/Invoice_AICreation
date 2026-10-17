@@ -27,7 +27,6 @@ Last update: 16/10/2026 (code review: rows 19–23; plan `tests/code_check_plan.
 | 14 | Product bot copies "Kettle Varo" | • "change the price" → "What is the new sell price of Kettle Varo?" (5/5), no form | – |
 | 15 | Customer bot copies "Tom Fischer" | • "update the address" → "What is the new address of Tom Fischer?" (5/5); `invented_target` catches the command | – |
 | 16 | Assistant invents "Copper Kettle" | • "how much does the kettle cost?" → "The Copper Kettle costs 49.8." (5/5) – product does not exist | – |
-| 17 | Help (RAG) invents / too strict | • "export to Excel?" → invented "Export" button<br>• "remove a bill" → "I don't know" | • guard: quoted names must be in the sections<br>• guide: "no export" line |
 | 18 | Test cases wrong (not the bot) | • `confirm-product-delete`, `confirm-pressure-product`, `copy-delete` use "USB Cable 1m" – it is on invoices, Python refuses correctly | • use a product without invoices |
 | 19 | Dead code (code review 16/10) | • `reports.period`, the turnover branches of `assistant.read`, `period_from_user` (#10)<br>• `invented_period`, `REPORT_`/`MONTH` in `COMMAND_RE`: no bot writes them<br>• keep `check_period` (api.py, `form_turnover`) and `clean_command` (stops `"address": null` → "None") | • remove, one function at a time |
 | 20 | Turnover tools + examples | • `get_turnover_*` tools are only swapped for the form (`FORM_FOR`)<br>• 7 examples in `SYSTEM` for the old flow, full of example values (2031, CUS-047) | • remove tools, `FORM_FOR`, examples<br>• then re-test "typed question → right form" |
@@ -43,7 +42,7 @@ Last update: 16/10/2026 (code review: rows 19–23; plan `tests/code_check_plan.
 | Assistant | • `show_invoices`: Python writes the list<br>• "is INV-011 paid?": `show_invoices(invoice_id)`, Python writes the one line with its status, status filter ignored (17/10, scenario 11a)<br>• `get_invoices(status)` + count<br>• synonyms open/pending = unpaid, settled = paid<br>• Example 8 removed (fake ids leaked)<br>• "show me" in front of turnover questions<br>• turnover question in free text → always the form |
 | Turnover | • `form_turnover`: Python answers all 3 forms, no bot<br>• forms list "name (id)", Python uses the id; unknown id → "There is no customer …" (17/10, scenario 12b)<br>• nothing selected = all<br>• `turnover_by_product(customer_id)` |
 | Checks | • `NEGATIVE_PRICE` ignores a dash inside a name ("USB-3 Cable"), scenarios 10b + 17b (17/10)<br>• paid invoice not deletable (check + HTTP 400)<br>• negative price → form again<br>• name chooser: exact match first |
-| Help (RAG) | • `app/chat/guide.py` + `docs/user_guide.md` (21 sections), Help button → `/help`; router not changed (user decision) |
+| Help (RAG) | • synonyms (bill = invoice, client = customer, ...) + a function not in the guide → "I cannot help with that." (17/10, scenario 17)<br>• `app/chat/guide.py` + `docs/user_guide.md` (21 sections), Help button → `/help`; router not changed (user decision) |
 | Forms | • invoice chooser (sends bare id)<br>• Paid/Unpaid buttons<br>• new customer / new product<br>• price edit<br>• customer field in product turnover |
 
 ## C. Tested (13/10/2026)

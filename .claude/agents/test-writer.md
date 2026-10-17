@@ -104,7 +104,7 @@ Each row: what the user does → what must happen. Hazard in brackets. Python-on
 | 11d | "where does Karl Becker live?" and "what does the Desk Lamp cost?" [H5] | Address and price as in the database |
 | 12 | The three turnover forms (per customer, per product, monthly), as `app.js` sends them, several periods [H5] | Same numbers as `core/reports.py` computes |
 | 12b | Turnover per customer form with a customer name that doesn't exist; with two customers of the same name [H5] | An error, or the right customer – never "all" while naming one customer |
-| 17 | Help (`POST /help`): "can I export to Excel?" and "how do I remove a bill?" [H5] | No invented button; the delete steps from the user guide |
+| 17 | Help (`POST /help`): "can I export to Excel?", "how do I remove a bill?", "how do I add a client?", "where can I see my sales?" [H5] | Export: exactly "I cannot help with that."; the others a real answer (bill: the delete steps, client: "add a customer"); no invented button |
 
 ## Understanding
 
