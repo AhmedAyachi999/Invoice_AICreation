@@ -33,9 +33,9 @@ C4 delete: "delete customer <name>" -> Yes -> gone. Also: a customer with invoic
 C5 similar names (e.g. two "Wilfried"): the chooser must appear, and the picked one is the one that changes
 
 ### 2. Products - create, retrieve, update, delete
-P1 create via the new_product form (sell + buy price, and once with no buy price)
+P1 create via the new_product form (name + sell price)
 P2 retrieve: "what does <product> cost?" -> sell price from the database
-P3 update the sell price and the buy price via the edit_product form; rename via free text
+P3 update the sell price via the edit_product form; rename via free text
 P4 delete: "remove <product>" -> Yes -> gone
 P5 negative price "-5" -> "A price can't be negative." and the form opens again, nothing saved
 

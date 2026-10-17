@@ -173,7 +173,7 @@ TOOLS = [
     tool("ask_monthly_turnover", "Show the user a form to choose a year and optionally a customer and a product for "
          "a question about turnover month by month. Use it when the user did not write a year."),
     tool("get_customers", "All customers: id, name, address."),
-    tool("get_products", "All products: id, name, sell_price, buy_price."),
+    tool("get_products", "All products: id, name, sell_price."),
     tool("get_invoices", "All invoices: id, customer_id, date, due_date, status (paid/unpaid), lines, total. "
          "Give status to get only the paid or only the unpaid invoices.",
          {"status": {"type": "string", "enum": ["paid", "unpaid"]}}),
@@ -192,10 +192,10 @@ TOOLS = [
     tool("update_customer", "Propose changing a customer.", {"customer_id": CUSTOMER_ID, "name": TEXT, "address": TEXT},
          ["customer_id", "name", "address"]),
     tool("delete_customer", "Propose deleting a customer.", {"customer_id": CUSTOMER_ID}, ["customer_id"]),
-    tool("create_product", "Propose a new product.", {"name": TEXT, "sell_price": NUMBER, "buy_price": NUMBER},
+    tool("create_product", "Propose a new product.", {"name": TEXT, "sell_price": NUMBER},
          ["name", "sell_price"]),
     tool("update_product", "Propose changing a product.",
-         {"product_id": PRODUCT_ID, "name": TEXT, "sell_price": NUMBER, "buy_price": NUMBER},
+         {"product_id": PRODUCT_ID, "name": TEXT, "sell_price": NUMBER},
          ["product_id", "name", "sell_price"]),
     tool("delete_product", "Propose deleting a product.", {"product_id": PRODUCT_ID}, ["product_id"]),
     tool("create_invoice", "Propose a new invoice.", INVOICE, list(INVOICE)),

@@ -57,8 +57,8 @@ def converse(conversation_id, message):
             ("name of the new customer" in text or "what is the address of" in text):
         result["ui"] = ["new_customer"]  # a new customer: offer the form for name and address
     if entity == "product" and result.get("open") and any(ask in text for ask in
-            ["name of the new product", "what is the sell price of", "what is the buy price of"]):
-        result["ui"] = ["new_product"]  # a new product: offer the form for name and prices
+            ["name of the new product", "what is the sell price of"]):
+        result["ui"] = ["new_product"]  # a new product: offer the form for name and sell price
     if entity == "invoice" and result.get("open"):  # the invoice bot asks or reports an error: offer pickers
         result["ui"] = [ui for ui, words in [("invoice", ["invoice number", "which invoice"]),
                                              ("status", ["paid or unpaid"]),

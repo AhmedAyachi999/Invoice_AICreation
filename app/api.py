@@ -34,10 +34,9 @@ class CustomerIn(BaseModel):
 
 
 class ProductIn(BaseModel):
-    """The data a client sends to create or change a product. Prices may be numbers or text like "12,5"."""
+    """The data a client sends to create or change a product. The price may be a number or text like "12,5"."""
     name: str
     sell_price: float | str
-    buy_price: float | str | None = None
 
 
 class LineIn(BaseModel):

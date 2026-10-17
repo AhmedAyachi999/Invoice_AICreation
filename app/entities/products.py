@@ -1,26 +1,23 @@
 from core import storage
 
-FIELDS = ["name", "sell_price", "buy_price"]
+FIELDS = ["name", "sell_price"]
 
 
 def check_product(product):
-    """Return an error message if the name or sell_price is missing or a given price is not a number >= 0, else None."""
+    """Return an error message if the name or sell_price is missing or the sell_price is not a number >= 0, else None."""
     name = str(product.get("name", "")).strip()
     if not name or name == "...":
         return "The name is missing."
-    for field in ["sell_price", "buy_price"]:
-        value = product.get(field)
-        value = "" if value is None else str(value).strip()
-        if not value and field == "buy_price":
-            continue
-        if not value or value == "...":
-            return f"The {field} is missing."
-        try:
-            price = float(value.replace(",", "."))
-        except ValueError:
-            return f"The {field} must be a number, not '{value}'."
-        if price < 0:
-            return f"The {field} must not be negative."
+    value = product.get("sell_price")
+    value = "" if value is None else str(value).strip()
+    if not value or value == "...":
+        return "The sell_price is missing."
+    try:
+        price = float(value.replace(",", "."))
+    except ValueError:
+        return f"The sell_price must be a number, not '{value}'."
+    if price < 0:
+        return "The sell_price must not be negative."
     return None
 
 
@@ -32,24 +29,23 @@ def to_price(value):
 
 
 def create_product(data):
-    """Give the product the next code, save it with its prices as numbers and return it."""
+    """Give the product the next code, save it with its sell price as a number and return it."""
     products = storage.load("products")
     product = {"id": storage.next_id("products", products), "name": data["name"].strip(),
-               "sell_price": to_price(data["sell_price"]), "buy_price": to_price(data.get("buy_price"))}
+               "sell_price": to_price(data["sell_price"])}
     products.append(product)
     storage.save("products", products)
     return product
 
 
 def update_product(product_id, data):
-    """Replace name and prices of a product; return it, or None if the code doesn't exist. Invoices are not touched."""
+    """Replace name and sell price of a product; return it, or None if the code doesn't exist. Invoices are not touched."""
     products = storage.load("products")
     product = storage.find(products, product_id)
     if product is None:
         return None
     product["name"] = data["name"].strip()
     product["sell_price"] = to_price(data["sell_price"])
-    product["buy_price"] = to_price(data.get("buy_price"))
     storage.save("products", products)
     return product
 
@@ -105,25 +101,20 @@ def check_command(command, data):
 
 def answer(command, data):
     """Answer a SHOW_PRODUCT: one line per product whose name matches."""
-    return "\n".join(f"{p['id']}: {p['name']} | sell price {p['sell_price']} | "
-                     f"buy price {'-' if p['buy_price'] is None else p['buy_price']}"
-                     for p in find_products(data["name"]))
+    return "\n".join(f"{p['id']}: {p['name']} | sell price {p['sell_price']}" for p in find_products(data["name"]))
 
 
 def build_proposal(command, data):
     """Turn a valid command into the CRUD call the frontend makes after the user's yes, plus a summary."""
     if command == "CREATE_PRODUCT":
-        body = {"name": data["name"].strip(), "sell_price": to_price(data["sell_price"]),
-                "buy_price": to_price(data.get("buy_price"))}
+        body = {"name": data["name"].strip(), "sell_price": to_price(data["sell_price"])}
         return {"method": "POST", "path": "/products", "body": body,
-                "summary": f"Create product: {body['name']} | sell price {body['sell_price']} | "
-                           f"buy price {body['buy_price']}"}
+                "summary": f"Create product: {body['name']} | sell price {body['sell_price']}"}
     product = find_products(data["name"])[0]
     if command == "UPDATE_PRODUCT":
         field = data["field"]
         value = str(data["value"]).strip() if field == "name" else to_price(data["value"])
-        body = {"name": product["name"], "sell_price": product["sell_price"], "buy_price": product["buy_price"],
-                field: value}
+        body = {"name": product["name"], "sell_price": product["sell_price"], field: value}
         return {"method": "PUT", "path": f"/products/{product['id']}", "body": body,
                 "summary": f"Change {field} of {product['id']} ({product['name']}): "
                            f"'{product[field]}' -> '{body[field]}'"}

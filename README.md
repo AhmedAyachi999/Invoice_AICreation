@@ -23,8 +23,9 @@ app/          Python code (FastAPI on 127.0.0.1)
     storage.py      SQLite: load, save, generate numbers (CUS-001, PRD-001, INV-001)
 modelfiles/   the bots: Modelfile-customer, -product, -invoice, -router
 static/       the website (one chat, choosers, tables)
-tests/        bot tests and test data (see tests/README.md)
-docs/         requirements, architecture, model choice, test scenarios (PDF), user_guide.md (Help)
+tests/        your own tests (empty, starting fresh)
+docs/         requirements, architecture, model choice, test scenarios (PDF), user_guide.md (Help),
+              open_problems.md, test_plan.md, code_check_plan.pdf
 data/         the database invoices.db (created on first start, not in git)
 ```
 

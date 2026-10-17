@@ -61,7 +61,7 @@ async function sendMessage(text) {
 
 const COLUMNS = {
   customers: ["id", "name", "address"],
-  products: ["id", "name", "sell_price", "buy_price"],
+  products: ["id", "name", "sell_price"],
   invoices: ["id", "customer_id", "date", "due_date", "status", "total"],
 };
 
@@ -233,29 +233,25 @@ function showCustomerForm(name = "") {
 }
 
 function showProductForm(name = "") {
-  /* A new product: name and sell price required, buy price optional; prices are numbers >= 0. The name is filled in
-     if the bot already knows it. "Create product" sends it in the form the product bot accepts directly:
-     "new product Monitor 32, sell price 249.00, buy price 180.00" (or "..., no buy price"). */
+  /* A new product: name and sell price (a number >= 0). The name is filled in if the bot already knows it.
+     "Create product" sends it in the form the product bot accepts directly: "new product Monitor 32, sell price 249.00". */
   const box = document.createElement("div");
   box.className = "message system date-picker";
   box.innerHTML = `<label>Name <input class="name" placeholder="product name"></label>
                    <label>Sell price <input type="number" class="sell" min="0" step="0.01"></label>
-                   <label>Buy price <input type="number" class="buy" min="0" step="0.01" placeholder="optional"></label>
                    <button disabled>Create product</button>`;
   const nameInput = box.querySelector(".name");
   const sell = box.querySelector(".sell");
-  const buy = box.querySelector(".buy");
   const create = box.querySelector("button");
   nameInput.value = name;
   const price = input => input.value !== "" && Number(input.value) >= 0;
   const update = () => {
-    create.disabled = !(nameInput.value.trim() && price(sell) && (buy.value === "" || price(buy)));
+    create.disabled = !(nameInput.value.trim() && price(sell));
   };
-  [nameInput, sell, buy].forEach(input => input.oninput = update);
+  [nameInput, sell].forEach(input => input.oninput = update);
   create.onclick = () => {
     box.remove();
-    const buyPart = buy.value === "" ? "no buy price" : `buy price ${Number(buy.value).toFixed(2)}`;
-    sendMessage(`new product ${nameInput.value.trim()}, sell price ${Number(sell.value).toFixed(2)}, ${buyPart}`);
+    sendMessage(`new product ${nameInput.value.trim()}, sell price ${Number(sell.value).toFixed(2)}`);
   };
   const messages = document.getElementById("messages");
   messages.appendChild(box);
@@ -263,7 +259,7 @@ function showProductForm(name = "") {
 }
 
 async function showProductEditForm() {
-  /* Change a product's price: choose the product, sell or buy price and the new price (>= 0) in one form, so the
+  /* Change a product's price: choose the product and the new sell price (>= 0) in one form, so the
      bot gets everything in one message it accepts directly: "product: Desk Lamp, new sell price 30.00". */
   const products = (await (await fetch("/products")).json()).sort((a, b) => a.name.localeCompare(b.name));
   const listId = "edit-product-list-" + Date.now();
@@ -271,14 +267,11 @@ async function showProductEditForm() {
   box.className = "message system date-picker";
   box.innerHTML = `<label>Product <input class="record" list="${listId}" placeholder="type to search"></label>
                    <datalist id="${listId}"></datalist>
-                   <label>Change <select class="field"><option value="sell price">sell price</option>
-                                                       <option value="buy price">buy price</option></select></label>
-                   <label>New price <input type="number" class="price" min="0" step="0.01"></label>
+                   <label>New sell price <input type="number" class="price" min="0" step="0.01"></label>
                    <button disabled>Change price</button>`;
   products.forEach(p => box.querySelector("datalist").appendChild(new Option(
-    `sell ${Number(p.sell_price).toFixed(2)} | buy ${p.buy_price === null ? "-" : Number(p.buy_price).toFixed(2)}`, p.name)));
+    `sell ${Number(p.sell_price).toFixed(2)}`, p.name)));
   const record = box.querySelector(".record");
-  const field = box.querySelector(".field");
   const price = box.querySelector(".price");
   const change = box.querySelector("button");
   const update = () => {
@@ -287,7 +280,7 @@ async function showProductEditForm() {
   [record, price].forEach(input => input.oninput = update);
   change.onclick = () => {
     box.remove();
-    sendMessage(`product: ${record.value}, new ${field.value} ${Number(price.value).toFixed(2)}`);
+    sendMessage(`product: ${record.value}, new sell price ${Number(price.value).toFixed(2)}`);
   };
   const messages = document.getElementById("messages");
   messages.appendChild(box);

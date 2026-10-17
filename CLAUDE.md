@@ -11,6 +11,6 @@ AI Invoice Assistant: a local REST API (FastAPI, 127.0.0.1) for customers, produ
   1. Say in 1-2 sentences why it is needed (which requirement or decision it serves).
   2. Show the exact code in the chat.
   3. Wait for approval. Only then write it to the file.
-- The same applies to test scripts.
+- Exception: test scripts in tests/ (written by the test-writer agent) and frontend code in static/ are written directly, no approval needed; just report what changed.
 - Keep explanations short.
 - Commands that don't write code (installs, running tests, ollama commands) can run without asking.

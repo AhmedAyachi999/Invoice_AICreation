@@ -32,13 +32,11 @@ Type "delete a customer", choose the customer from the list and click Yes. A cus
 cannot be deleted; the assistant tells you which invoices use them.
 
 ## How do I add a product?
-Type "add a product". A form opens: enter the name, the sell price and, if you know it, the buy price (the buy
-price is optional). Prices are in EUR and cannot be negative. Check the summary and click Yes. The product gets a
+Type "add a product". A form opens: enter the name and the sell price. Prices are in EUR and cannot be negative. Check the summary and click Yes. The product gets a
 number like PRD-013.
 
 ## How do I change the price of a product?
-Type "change the price of a product". A form opens: choose the product, choose sell price or buy price, and enter
-the new price. Click Yes to save it. Invoices that already exist keep the price they were created with.
+Type "change the price of a product". A form opens: choose the product and enter the new sell price. Click Yes to save it. Invoices that already exist keep the price they were created with.
 
 ## How do I delete a product?
 Type "delete a product", choose it from the list and click Yes. A product that is used on an invoice cannot be

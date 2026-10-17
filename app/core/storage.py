@@ -20,7 +20,7 @@ def create_tables():
             CREATE TABLE IF NOT EXISTS customers (
                 id TEXT PRIMARY KEY, name TEXT NOT NULL, address TEXT NOT NULL);
             CREATE TABLE IF NOT EXISTS products (
-                id TEXT PRIMARY KEY, name TEXT NOT NULL, sell_price REAL NOT NULL, buy_price REAL);
+                id TEXT PRIMARY KEY, name TEXT NOT NULL, sell_price REAL NOT NULL);
             CREATE TABLE IF NOT EXISTS invoices (
                 id TEXT PRIMARY KEY, customer_id TEXT NOT NULL REFERENCES customers(id),
                 date TEXT NOT NULL, due_date TEXT NOT NULL, status TEXT NOT NULL);

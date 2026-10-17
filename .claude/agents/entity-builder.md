@@ -90,7 +90,7 @@ implementation (`app/core/storage.py`, `app/entities/customers.py`, `app/chat/bo
 - PowerShell splits native-command arguments at double quotes: don't pass JSON or quoted text inline to git/python.
 
 ## Entity notes from the spec
-- Products: Code PRD-001 (generated), name, sell_price, buy_price (numbers >= 0; buy_price only stored). A product
+- Products: Code PRD-001 (generated), name, sell_price (a number >= 0). A product
   used in an invoice line cannot be deleted. Changing sell_price must not change existing invoice lines.
 - Invoices: Number INV-001, customer, date, due_date (DD/MM/YYYY, due_date not before date), status paid/unpaid,
   lines (product, quantity whole number > 0, unit_price defaulting to the product's sell_price, editable). Totals
