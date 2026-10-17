@@ -33,7 +33,6 @@ Last update: 16/10/2026 (code review: rows 19–23; plan `tests/code_check_plan.
 | 20 | Turnover tools + examples | • `get_turnover_*` tools are only swapped for the form (`FORM_FOR`)<br>• 7 examples in `SYSTEM` for the old flow, full of example values (2031, CUS-047) | • remove tools, `FORM_FOR`, examples<br>• then re-test "typed question → right form" |
 | 21 | `next_id` reuses numbers | • highest + 1: delete INV-012 (the highest) → the next invoice is INV-012 again<br>• architecture.pdf P5 says "numbers not reused" | • decide; e.g. never go below a stored maximum |
 | 22 | `propose` delete: no usage check | • assistant path: "on an invoice" / "paid" not checked → proposal shown, refused only after Yes ("Not saved") | • call `check_command` of the entity |
-| 23 | `form_turnover` looks ids up by name | • the `(ID)` from the form is dropped; same name twice → the first one<br>• name not found → id `None` → counts as **all**, the answer still says "customer X" | • read the id in brackets; unknown name → error |
 | – | Skipped (user decision) | • "how many invoices are open?" → 11<br>• "delete all unpaid invoices"<br>• turnover as free text with dates | – |
 
 ## B. Solved – don't redo
@@ -42,7 +41,7 @@ Last update: 16/10/2026 (code review: rows 19–23; plan `tests/code_check_plan.
 |---|---|
 | Router | • thinks step by step: Intention / To do that / So → `Route:`<br>• `route()` reads only after "route:" |
 | Assistant | • `show_invoices`: Python writes the list<br>• "is INV-011 paid?": `show_invoices(invoice_id)`, Python writes the one line with its status, status filter ignored (17/10, scenario 11a)<br>• `get_invoices(status)` + count<br>• synonyms open/pending = unpaid, settled = paid<br>• Example 8 removed (fake ids leaked)<br>• "show me" in front of turnover questions<br>• turnover question in free text → always the form |
-| Turnover | • `form_turnover`: Python answers all 3 forms, no bot<br>• nothing selected = all<br>• `turnover_by_product(customer_id)` |
+| Turnover | • `form_turnover`: Python answers all 3 forms, no bot<br>• forms list "name (id)", Python uses the id; unknown id → "There is no customer …" (17/10, scenario 12b)<br>• nothing selected = all<br>• `turnover_by_product(customer_id)` |
 | Checks | • `NEGATIVE_PRICE` ignores a dash inside a name ("USB-3 Cable"), scenarios 10b + 17b (17/10)<br>• paid invoice not deletable (check + HTTP 400)<br>• negative price → form again<br>• name chooser: exact match first |
 | Help (RAG) | • `app/chat/guide.py` + `docs/user_guide.md` (21 sections), Help button → `/help`; router not changed (user decision) |
 | Forms | • invoice chooser (sends bare id)<br>• Paid/Unpaid buttons<br>• new customer / new product<br>• price edit<br>• customer field in product turnover |

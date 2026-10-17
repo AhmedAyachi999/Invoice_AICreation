@@ -316,9 +316,16 @@ def form_turnover(message):
     if not match:
         return None
     rest = match.groups()[-1]
-    names = dict(re.findall(r"(customer|product): (.+?)(?: \([A-Z]+-\d+\))?(?=, |$)", rest))  # nothing chosen = all
-    ids = {key: next((r["id"] for r in storage.load(key + "s") if r["name"] == name), None)
-           for key, name in names.items()}
+    chosen = re.findall(r"(customer|product): (.+?)(?: \(([A-Z]+-\d+)\))?(?=, |$)", rest)  # nothing chosen = all
+    names = {key: name for key, name, _ in chosen}
+    ids = {}
+    for key, name, record_id in chosen:  # the id in brackets from the form; without one, the name
+        records = storage.load(key + "s")
+        found = storage.find(records, record_id) if record_id else \
+            next((r for r in records if r["name"] == name), None)
+        if found is None:  # never "all" while the answer names one customer or product
+            return f"There is no {key} {record_id or name}."
+        ids[key] = found["id"]
     scope = "".join(f", {key} {name}" for key, name in names.items())
     if monthly:  # all 12 months, also those with 0, like the table in the requirements
         year = monthly[1]

@@ -328,7 +328,9 @@ async function showTurnoverPicker(kind) {
                    <label>${label} <input class="record" list="${listId}" placeholder="all ${kind}s"></label>
                    <datalist id="${listId}"></datalist>
                    <button disabled>Show turnover</button>`;
-  records.forEach(r => box.querySelector("datalist").appendChild(new Option(hint(r), r.name)));
+  // each entry is "name (id)", so two customers with the same name stay different
+  const entry = r => `${r.name} (${r.id})`;
+  records.forEach(r => box.querySelector("datalist").appendChild(new Option(hint(r), entry(r))));
   // Turnover per customer can also be limited to one product, turnover per product to one customer
   // (sent with its id, so the bot never looks it up).
   const other = kind === "customer" ? "product" : "customer";
@@ -337,7 +339,7 @@ async function showTurnoverPicker(kind) {
   const extraList = `${listId}-${other}s`;
   const extraLabel = document.createElement("label");
   extraLabel.innerHTML = `${other[0].toUpperCase() + other.slice(1)} <input class="extra" list="${extraList}" placeholder="all ${other}s"><datalist id="${extraList}"></datalist>`;
-  extras.forEach(r => extraLabel.querySelector("datalist").appendChild(new Option(extraHint(r), r.name)));
+  extras.forEach(r => extraLabel.querySelector("datalist").appendChild(new Option(extraHint(r), entry(r))));
   box.insertBefore(extraLabel, box.querySelector("button"));
   const extra = extraLabel.querySelector(".extra");
   const start = box.querySelector(".start");
@@ -347,8 +349,8 @@ async function showTurnoverPicker(kind) {
   const update = () => {
     end.min = start.value;
     if (end.value && start.value && end.value < start.value) end.value = "";
-    const recordOk = record.value === "" || records.some(r => r.name === record.value);
-    const extraOk = extra.value === "" || extras.some(r => r.name === extra.value);
+    const recordOk = record.value === "" || records.some(r => entry(r) === record.value);
+    const extraOk = extra.value === "" || extras.some(r => entry(r) === extra.value);
     show.disabled = !(start.value && end.value && recordOk && extraOk);
   };
   start.onchange = update;
@@ -357,11 +359,11 @@ async function showTurnoverPicker(kind) {
   extra.oninput = update;
   show.onclick = () => {
     box.remove();
-    const picked = records.find(r => r.name === record.value);  // sent with its id, so the bot never looks it up
-    const which = picked ? `${kind}: ${picked.name}${kind === "customer" ? ` (${picked.id})` : ""}` : `all ${kind}s`;
+    const picked = records.find(r => entry(r) === record.value);  // sent with its id, Python uses the id
+    const which = picked ? `${kind}: ${entry(picked)}` : `all ${kind}s`;
     const prefix = `turnover per ${kind}`;  // names the kind, so the bot picks the right tool
-    const chosen = extras.find(r => r.name === extra.value);
-    const extraPart = chosen ? `, ${other}: ${chosen.name} (${chosen.id})` : "";  // nothing chosen: no filter
+    const chosen = extras.find(r => entry(r) === extra.value);
+    const extraPart = chosen ? `, ${other}: ${entry(chosen)}` : "";  // nothing chosen: no filter
     sendMessage(`${prefix} from ${toDisplayDate(start.value)} to ${toDisplayDate(end.value)}, ${which}${extraPart}`);
   };
   const messages = document.getElementById("messages");
@@ -384,13 +386,14 @@ async function showMonthlyTurnoverPicker() {
                    <label>Product <input class="product" list="mp-${stamp}" placeholder="all products"></label>
                    <datalist id="mp-${stamp}"></datalist>
                    <button>Show turnover</button>`;
-  customers.forEach(c => box.querySelector(`#mc-${stamp}`).appendChild(new Option(c.address, c.name)));
-  products.forEach(p => box.querySelector(`#mp-${stamp}`).appendChild(new Option(`sell price ${Number(p.sell_price).toFixed(2)}`, p.name)));
+  const entry = r => `${r.name} (${r.id})`;  // "name (id)", so two records with the same name stay different
+  customers.forEach(c => box.querySelector(`#mc-${stamp}`).appendChild(new Option(c.address, entry(c))));
+  products.forEach(p => box.querySelector(`#mp-${stamp}`).appendChild(new Option(`sell price ${Number(p.sell_price).toFixed(2)}`, entry(p))));
   const year = box.querySelector(".year");
   const customer = box.querySelector(".customer");
   const product = box.querySelector(".product");
   const show = box.querySelector("button");
-  const find = (records, name) => records.find(r => r.name === name);
+  const find = (records, value) => records.find(r => entry(r) === value);
   const update = () => {
     const yearOk = /^\d{4}$/.test(year.value);
     show.disabled = !(yearOk && (customer.value === "" || find(customers, customer.value))
