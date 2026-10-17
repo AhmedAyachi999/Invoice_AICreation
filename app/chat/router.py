@@ -10,7 +10,7 @@ from entities import customers, invoices, products
 ROUTER = "inv-router-bot"
 BOTS = {"customer": ("inv-customer-bot", customers), "product": ("inv-product-bot", products),
         "invoice": ("inv-invoice-bot", invoices)}
-NEGATIVE_PRICE = re.compile(r"-\s*\d")  # "-5", "- 5", "-0.5"
+NEGATIVE_PRICE = re.compile(r"(?<!\w)-\s*\d")  # "-5", "- 5", "-0.5"; not the dash inside a name like "USB-3"
 SESSIONS = {}  # conversation_id -> {"last": entity, "waiting": bool, "ids": {entity: bot conversation_id}}
 
 

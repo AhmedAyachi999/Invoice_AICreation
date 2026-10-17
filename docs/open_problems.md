@@ -21,7 +21,6 @@ Last update: 16/10/2026 (code review: rows 19–23; plan `tests/code_check_plan.
 | 6 | Invoice bot asks again | • for info already given | • mitigated by forms |
 | 7 | Product rename after chooser | • unreliable → edit form only covers prices | – |
 | 8 | Assistant format | • sometimes only "Analysis:", no "Answer:" | – |
-| 9 | `NEGATIVE_PRICE` regex | • matches "USB-3 Cable" | • guard unit test |
 | 10 | `period_from_user` | • unused since "always the form" | • remove |
 | 11 | Router: "add a customer named Lena Berg" | • → `question` (0/5) | – |
 | 12 | Router: "INV-004 is paid" | • → `question` (0/5), it is a change | – |
@@ -45,7 +44,7 @@ Last update: 16/10/2026 (code review: rows 19–23; plan `tests/code_check_plan.
 | Router | • thinks step by step: Intention / To do that / So → `Route:`<br>• `route()` reads only after "route:" |
 | Assistant | • `show_invoices`: Python writes the list<br>• `get_invoices(status)` + count<br>• synonyms open/pending = unpaid, settled = paid<br>• Example 8 removed (fake ids leaked)<br>• "show me" in front of turnover questions<br>• turnover question in free text → always the form |
 | Turnover | • `form_turnover`: Python answers all 3 forms, no bot<br>• nothing selected = all<br>• `turnover_by_product(customer_id)` |
-| Checks | • paid invoice not deletable (check + HTTP 400)<br>• negative price → form again<br>• name chooser: exact match first |
+| Checks | • `NEGATIVE_PRICE` ignores a dash inside a name ("USB-3 Cable"), scenarios 10b + 17b (17/10)<br>• paid invoice not deletable (check + HTTP 400)<br>• negative price → form again<br>• name chooser: exact match first |
 | Help (RAG) | • `app/chat/guide.py` + `docs/user_guide.md` (21 sections), Help button → `/help`; router not changed (user decision) |
 | Forms | • invoice chooser (sends bare id)<br>• Paid/Unpaid buttons<br>• new customer / new product<br>• price edit<br>• customer field in product turnover |
 
