@@ -31,3 +31,7 @@ table { width: 100%; border-collapse: collapse; }
 th, td { text-align: left; padding: 6px; border-bottom: 1px solid #ddd; }
 th { background: #eaf1f8; }
 .message.help { white-space: pre-wrap; background: #fff8e6; }
+.message.router { background: #f1f1f6; color: #555; font-size: 13px; }
+.ai-badge { display: inline-block; padding: 0 5px; border-radius: 4px; background: #6b4fbb; color: #fff;
+            font-size: 11px; font-weight: bold; font-style: normal; vertical-align: 1px; }
+#ai-notice { margin: 6px 0 0; font-size: 12px; color: #666; }

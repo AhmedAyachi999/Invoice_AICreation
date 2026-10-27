@@ -2,10 +2,18 @@ let entity = "customers";        // the table shown on the right: "customers", "
 let conversationId = null;       // one chat for everything; the server routes each message to the right bot
 
 function addMessage(who, text) {
-  /* Show one line in the chat: who is "You", "Bot" or "System". Returns the new element. */
+  /* Show one line in the chat: who is "You", "Bot" or "System". Returns the new element.
+     Lines from a language model (Bot, Router, Help) get an "AI" badge, so AI output is identifiable. */
   const line = document.createElement("div");
   line.className = "message " + who.toLowerCase();
   line.textContent = who + ": " + text;
+  if (/^(Bot|Router|Help)/.test(who)) {
+    const badge = document.createElement("span");
+    badge.className = "ai-badge";
+    badge.textContent = "AI";
+    badge.title = "Written with a local language model. It can be wrong: nothing is saved without your Yes.";
+    line.prepend(badge, " ");
+  }
   const box = document.getElementById("messages");
   box.appendChild(line);
   box.scrollTop = box.scrollHeight;
@@ -29,6 +37,7 @@ async function sendMessage(text) {
       return;
     }
     conversationId = data.conversation_id;
+    if (data.reasoning) addMessage("Router", data.reasoning);  // why the router bot sent the message where it did
     const who = data.entity ? `Bot (${data.entity})` : "Bot";   // shows which bot answered
     if (data.proposal) {
       showProposal(data.proposal, who);

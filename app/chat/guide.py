@@ -1,16 +1,14 @@
 """Help with using the software (RAG): the user guide docs/user_guide.md is cut into sections, the sections that
 match a question are found by meaning (embeddings) and given to the bot as the only source for its answer."""
-import json
 import math
+import os
 import pathlib
 import re
-import urllib.request
 
-from chat.bot import OLLAMA_URL, chat
+from chat.bot import ModelError, ask_model, chat
 
 GUIDE = pathlib.Path(__file__).parent.parent.parent / "docs" / "user_guide.md"
-EMBED_MODEL = "nomic-embed-text"  # local embedding model (ollama pull nomic-embed-text)
-EMBED_URL = OLLAMA_URL.replace("/api/chat", "/api/embed")
+EMBED_MODEL = os.environ.get("LLM_EMBED_MODEL", "nomic-embed-text")  # local embedding model (ollama pull nomic-embed-text)
 SECTIONS = []  # the sections with their vectors, filled on the first help question
 MODEL = "llama3.2:3b"
 SYSTEM = ("You answer questions about how to use the AI Invoice Assistant, a small invoicing program. "
@@ -39,10 +37,11 @@ def load_sections():
 
 def embed(texts):
     """Turn texts into vectors (768 numbers each) with the local embedding model: similar meaning, similar numbers."""
-    body = json.dumps({"model": EMBED_MODEL, "input": texts}).encode()
-    request = urllib.request.Request(EMBED_URL, data=body, headers={"Content-Type": "application/json"})
-    with urllib.request.urlopen(request) as response:
-        return json.loads(response.read())["embeddings"]
+    data = ask_model("/embeddings", {"model": EMBED_MODEL, "input": texts})
+    try:
+        return [item["embedding"] for item in data["data"]]
+    except (KeyError, TypeError):
+        raise ModelError("The embedding model gave an unexpected answer. Please try again.")
 
 
 def build_index():

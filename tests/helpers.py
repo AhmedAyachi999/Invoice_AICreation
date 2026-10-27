@@ -1,8 +1,7 @@
-"""Shared helpers for the chat tests: a temporary copy of the database, the TestClient and the steps
+"""Shared helpers for the chat tests: a temporary database from seed/demo_data.json, the TestClient and the steps
 (chat message, form, Yes, database snapshot, checks). Run the tests with PYTHONPATH=app."""
 import json
 import re
-import shutil
 import sys
 import tempfile
 import time
@@ -15,7 +14,8 @@ ROOT = Path(__file__).parent.parent
 TMP = Path(tempfile.gettempdir()) / "invoice_tests"
 TMP.mkdir(exist_ok=True)
 storage.DB_PATH = TMP / "start.db"  # never the real database, also not during the imports below
-shutil.copy(ROOT / "data" / "invoices.db", storage.DB_PATH)
+storage.DB_PATH.unlink(missing_ok=True)  # seed() fills only a database that doesn't exist yet
+storage.seed()  # built from seed/demo_data.json (data/ is not in git)
 
 from fastapi.testclient import TestClient  # noqa: E402
 import api  # noqa: E402
@@ -34,10 +34,9 @@ def day(offset=0):
 
 
 def fresh_db():
-    """A new copy of data/invoices.db for one run; storage uses it from now on."""
-    path = Path(tempfile.mkdtemp(dir=TMP)) / "invoices.db"
-    shutil.copy(ROOT / "data" / "invoices.db", path)
-    storage.DB_PATH = path
+    """A new database from seed/demo_data.json for one run; storage uses it from now on."""
+    storage.DB_PATH = Path(tempfile.mkdtemp(dir=TMP)) / "invoices.db"  # a new folder: the file doesn't exist yet
+    storage.seed()
 
 
 def get(path):

@@ -1,13 +1,15 @@
+import json
+import os
 import sqlite3
 from pathlib import Path
 
-DATA_DIR = Path(__file__).parent.parent.parent / "data"  # data/ in the project root, next to app/
-DB_PATH = DATA_DIR / "invoices.db"
+DB_PATH = Path(os.environ.get("INVOICE_DB_PATH", Path(__file__).parent.parent.parent / "data" / "invoices.db"))
+SEED = Path(__file__).parent.parent.parent / "seed" / "demo_data.json"  # example data for a reproducible demo
 
 
 def connect():
-    """Open the SQLite database file data/invoices.db (created if it doesn't exist yet)."""
-    DATA_DIR.mkdir(exist_ok=True)
+    """Open the SQLite database file (INVOICE_DB_PATH, default data/invoices.db; created if it doesn't exist yet)."""
+    DB_PATH.parent.mkdir(parents=True, exist_ok=True)
     connection = sqlite3.connect(DB_PATH)
     connection.row_factory = sqlite3.Row
     return connection
@@ -61,6 +63,15 @@ def save(entity, records):
                     "INSERT INTO invoice_lines (invoice_id, line, product_id, quantity, unit_price) "
                     "VALUES (?, ?, ?, ?, ?)",
                     (record["id"], line["line"], line["product_id"], line["quantity"], line["unit_price"]))
+
+
+def seed():
+    """On the first start (no database file yet), fill the new database with the example data."""
+    if DB_PATH.exists():
+        return
+    data = json.loads(SEED.read_text(encoding="utf-8"))
+    for entity in ("customers", "products", "invoices"):
+        save(entity, data[entity])
 
 
 PREFIXES = {"customers": "CUS", "products": "PRD", "invoices": "INV"}

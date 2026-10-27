@@ -85,3 +85,9 @@ Last update: 16/10/2026 (code review: rows 19–23; plan `tests/code_check_plan.
 • checks only `name`/`id`, not new values<br>
 • substring: user "Desk Lamp", bot "Lamp" → not caught<br>
 • doesn't run for assistant tool calls (`CUS-061` got through)
+
+## E. Ideas to try
+
+| Idea | Why | Seen |
+|---|---|---|
+| Bot corrects a request that has a mistake | • a user's wording may not fit what the bots know (wrong word, typo, unknown synonym)<br>• instead of failing silently, the bot could say what it understood and ask: "Did you mean: delete the customer Tim Wagner?" | • 21/10: "remove Tim Wagner" → the router copied its own Modelfile instructions and ended with "Route: other" (the last example) → "Sorry …"; "delete Tim Wagner" works<br>• "remove" appears only in the product example, "delete" in the customer rule |

@@ -1,7 +1,9 @@
 """Hangs and environment: 14 (bot, 5 runs; run this file last, it also reads the timings of the other files)
-and 27 (Ollama not reachable, 1 run)."""
+and 27 (model server not reachable, 1 run)."""
+import time
+
 import helpers  # first: points the database to a temporary copy
-from chat import assistant, bot
+from chat import bot  # noqa: E402
 
 LIMIT = 120  # seconds per reply
 
@@ -26,22 +28,26 @@ def all_messages(run):
 
 
 def scenario_27(run):
-    """Ollama not reachable: a clear error reply or HTTP 5xx with a message; no crash; database unchanged."""
+    """Model server not reachable: a fast HTTP 503 with a clear message (no hang, no 500); database unchanged."""
     before = helpers.snapshot()
-    closed = "http://127.0.0.1:9/api/chat"  # a closed port, only in this test
-    bot.OLLAMA_URL, assistant.OLLAMA_URL = closed, closed
+    old_url = bot.LLM_BASE_URL
+    bot.LLM_BASE_URL = "http://127.0.0.1:9/v1"  # a closed port, only in this test; every model call reads it
+    expected = "The language model is not reachable. Please check that the model server is running."
     try:
+        started = time.time()
         response = helpers.client.post("/chat", json={"message": "list my customers", "conversation_id": None})
-        run.out(f">>> list my customers\n    HTTP {response.status_code}: {response.text!r}")
+        seconds = time.time() - started
+        run.out(f">>> list my customers\n    HTTP {response.status_code}, {seconds:.1f} s: {response.text!r}")
         run.check("no crash of the test client", True)
-        text = response.json().get("reply", "") if response.status_code == 200 else response.text
-        run.check("a clear error reply or HTTP 5xx with a message",
-                  (response.status_code == 200 and text.strip()) or
-                  (response.status_code >= 500 and text.strip() and text.strip() != "Internal Server Error"))
+        run.check(f"answer within {LIMIT} s ({seconds:.1f} s)", seconds <= LIMIT)
+        run.check("HTTP 503 (not 500)", response.status_code == 503)
+        detail = response.json().get("detail") if response.headers.get("content-type", "").startswith(
+            "application/json") else None
+        run.check(f"detail = {expected!r}", detail == expected)
     except Exception as error:  # the test client crashed
         run.check(f"no crash of the test client ({error!r})", False)
     finally:
-        bot.OLLAMA_URL, assistant.OLLAMA_URL = "http://localhost:11434/api/chat", "http://localhost:11434/api/chat"
+        bot.LLM_BASE_URL = old_url
     run.check("database unchanged", helpers.snapshot() == before)
     return run.done()
 

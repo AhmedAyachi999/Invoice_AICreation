@@ -12,30 +12,56 @@ BOTS = {"customer": ("inv-customer-bot", customers), "product": ("inv-product-bo
         "invoice": ("inv-invoice-bot", invoices)}
 NEGATIVE_PRICE = re.compile(r"(?<!\w)-\s*\d")  # "-5", "- 5", "-0.5"; not the dash inside a name like "USB-3"
 SESSIONS = {}  # conversation_id -> {"last": entity, "waiting": bool, "ids": {entity: bot conversation_id}}
+QUESTIONS = {  # (route, action) -> the bot's own first question; Python asks it when the bot refuses its task
+    ("customer", "created"): "What is the name of the new customer?",
+    ("customer", "changed"): "Which customer do you want to change?",
+    ("customer", "deleted"): "Which customer do you want to delete?",
+    ("product", "created"): "What is the name of the new product?",
+    ("product", "changed"): "Which product do you want to change?",
+    ("product", "deleted"): "Which product do you want to delete?",
+    ("invoice", "created"): "What are the invoice date and the due date?",
+    ("invoice", "changed"): "Which invoice number?",
+    ("invoice", "deleted"): "Which invoice number do you want to delete?",
+}
+
+
+def action(reasoning):
+    """The action from the router's line "To do that: a product must be deleted.": 'created', 'changed', 'deleted'
+    or None (only read, or no reasoning because the message was a follow-up answer)."""
+    line = next((l for l in (reasoning or "").lower().splitlines() if l.startswith("to do that")), "")
+    return next((word for word in ("created", "changed", "deleted") if f"must be {word}" in line), None)
 
 
 def route(message):
     """Ask the router bot which bot a message belongs to: 'question', 'customer', 'product', 'invoice', or None.
-    The bot thinks step by step first; only the word after 'Route:' counts."""
-    reply = bot.chat(ROUTER, [{"role": "user", "content": message}]).lower()
-    words = [word.strip(".:,") for word in reply.rsplit("route:", 1)[-1].split()]
-    return next((word for word in words if word in BOTS or word == "question"), None)  # e.g. "assistant: customer"
+    The bot thinks step by step first; only the word after 'Route:' counts.
+    If the bot repeats its instructions instead (it read "remove the customer" as "remove the customer route"),
+    Python asks once more with the message marked as a user message.
+    Returns (route, reasoning): the reasoning is the bot's text before 'Route:', shown to the user."""
+    reply = bot.chat(ROUTER, [{"role": "user", "content": message}])
+    if bot.PYTHON and "The routes:" in reply:  # the bot repeated its instructions: one retry, clearly marked
+        reply = bot.chat(ROUTER, [{"role": "user", "content": f'Sort this user message: "{message}"'}])
+    reasoning, _, after = reply.rpartition("Route:")
+    words = [word.strip(".:,") for word in (after if reasoning else reply).lower().split()]
+    entity = next((word for word in words if word in BOTS or word == "question"), None)  # e.g. "assistant: customer"
+    return entity, (reasoning or reply).strip()
 
 
 def converse(conversation_id, message):
-    """Handle one message of the single chat: route it, let that bot answer, return its reply or proposal."""
+    """Handle one message of the single chat: route it, let that bot answer, return its reply or proposal.
+    When the router bot was asked, its reasoning is returned too (shown to the user)."""
     if conversation_id not in SESSIONS:
         conversation_id = str(uuid.uuid4())
         SESSIONS[conversation_id] = {"last": None, "waiting": False, "ids": {}}
     session = SESSIONS[conversation_id]
     # Get entity of last session or try to find it
-    entity = session["last"] if session["waiting"] else route(message)
+    entity, reasoning = (session["last"], None) if session["waiting"] else route(message)
     if entity is None:
-        return {"conversation_id": conversation_id,
+        return {"conversation_id": conversation_id, "reasoning": reasoning,
                 "reply": "Sorry, I can only help with customers, products and invoices."}
-    if entity == "product" and NEGATIVE_PRICE.search(message):  # caught in Python: the bot would refuse or forget it
+    if bot.PYTHON and entity == "product" and NEGATIVE_PRICE.search(message):  # caught in Python: the bot would refuse or forget it
         new = any(word in message.lower() for word in ("create", "add", "new"))
-        return {"conversation_id": conversation_id, "entity": entity,
+        return {"conversation_id": conversation_id, "entity": entity, "reasoning": reasoning,
                 "reply": "A price can't be negative. Please enter it in the form.",
                 "ui": ["new_product" if new else "edit_product"]}
     if entity == "question":
@@ -44,6 +70,10 @@ def converse(conversation_id, message):
         model, module = BOTS[entity]
         result = bot.converse(model, module.check_command, module.build_proposal, module.answer,
                               session["ids"].get(entity), message)
+    question = QUESTIONS.get((entity, action(reasoning)))
+    if bot.PYTHON and question and result.get("reply", "").startswith("Sorry, I can only"):  # the bot refused its task
+        bot.CONVERSATIONS[result["conversation_id"]][-1]["content"] = question  # the bot's history shows the question
+        result = {**result, "reply": question, "open": True}  # the form rules below then offer the matching form
     session["ids"][entity] = result["conversation_id"]
     session["last"] = entity
     session["waiting"] = result.get("open", False)  # a question or an error: the task is not finished yet
@@ -65,4 +95,6 @@ def converse(conversation_id, message):
                                              ("customer", ["customer"]), ("dates", ["date"]),
                                              ("lines", ["product", "line", "quantity", "item"])]
                         if any(word in text for word in words)]
-    return {**result, "conversation_id": conversation_id, "entity": entity}
+    if not bot.PYTHON:
+        result.pop("ui", None)  # the bots alone: no forms, the user types the answer to the bot's question
+    return {**result, "conversation_id": conversation_id, "entity": entity, "reasoning": reasoning}

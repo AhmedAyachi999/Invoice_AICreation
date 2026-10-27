@@ -3,13 +3,12 @@ and returned as a proposal, which the frontend saves through the CRUD endpoints 
 import calendar
 import json
 import re
-import urllib.request
 
-from chat.bot import OLLAMA_URL, get_conversation
+from chat.bot import LLM_MODEL, LLM_TEMPERATURE, PYTHON, ModelError, ask_model, get_conversation
 from core import reports, storage
 from entities import customers, invoices, products
 
-MODEL = "llama3.2:3b"
+MODEL = LLM_MODEL or "llama3.2:3b"
 MAX_ROUNDS = 5  # tool calls per user message before the bot has to answer
 SYSTEM = ("You help with the customers, products, invoices and turnover of an invoicing system. Use the tools to "
           "read data and answer only from what they return. Dates are DD/MM/YYYY. Turnover means paid invoices, "
@@ -217,12 +216,14 @@ CHECKS = {"customer": customers.check_customer, "product": products.check_produc
 
 
 def chat(messages):
-    """Send the conversation and the tools to Ollama; return the bot's message (text and/or tool calls)."""
-    body = json.dumps({"model": MODEL, "messages": messages, "tools": TOOLS, "stream": False,
-                       "options": {"temperature": 0}}).encode()
-    request = urllib.request.Request(OLLAMA_URL, data=body, headers={"Content-Type": "application/json"})
-    with urllib.request.urlopen(request) as response:
-        return json.loads(response.read())["message"]
+    """Send the conversation and the tools to the OpenAI-compatible server; return the bot's message
+    (text and/or tool calls)."""
+    data = ask_model("/chat/completions", {"model": MODEL, "messages": messages, "tools": TOOLS,
+                                           "temperature": LLM_TEMPERATURE, "stream": False})
+    try:
+        return data["choices"][0]["message"]
+    except (KeyError, IndexError, TypeError):
+        raise ModelError("The language model gave an unexpected answer. Please try again.")
 
 
 def period_from_user(name, args, messages):
@@ -390,16 +391,21 @@ def converse(conversation_id, message):
             break
         for call in calls:
             name, args = call["function"]["name"], call["function"].get("arguments") or {}
-            if name in FORM_FOR:  # a turnover question in free text: always the form, Python answers what it sends
+            try:
+                args = json.loads(args) if isinstance(args, str) else args  # OpenAI format: arguments come as JSON text
+            except ValueError:  # the model wrote broken arguments: treat them as none, the tools then ask or check
+                args = {}
+            if PYTHON and name in FORM_FOR:  # a turnover question in free text: always the form, Python answers what it sends
                 name = FORM_FOR[name]
             if name in UI_TOOLS:  # a UI tool: the browser shows a form, the user's answer comes back as a message
                 ui, question = UI_TOOLS[name]
-                messages.append({"role": "tool", "content": "The form is shown to the user. Wait for the answer."})
+                messages.append({"role": "tool", "tool_call_id": call.get("id"),
+                                 "content": "The form is shown to the user. Wait for the answer."})
                 messages.append({"role": "assistant", "content": question})
                 return {"conversation_id": conversation_id, "reply": question, "ui": [ui], "open": True}
             if name == "show_invoices":  # Python writes the list itself, the bot never copies it
                 text = list_invoices(args.get("status"), args.get("invoice_id"))
-                messages.append({"role": "tool", "content": text})
+                messages.append({"role": "tool", "tool_call_id": call.get("id"), "content": text})
                 messages.append({"role": "assistant", "content": text})  # the history shows what the user saw
                 return {"conversation_id": conversation_id, "reply": text}
             if name.startswith("get_"):
@@ -413,7 +419,7 @@ def converse(conversation_id, message):
                 error, proposal = propose(name, args)
                 content = f"Not possible: {error}" if error else \
                     "Proposal shown to the user. Nothing is saved until the user clicks Yes."
-            messages.append({"role": "tool", "content": content})
+            messages.append({"role": "tool", "tool_call_id": call.get("id"), "content": content})
         if proposal:
             return {"conversation_id": conversation_id, "proposal": proposal}
     text = reply.get("content") or "Sorry, I could not answer that. Please ask in other words."

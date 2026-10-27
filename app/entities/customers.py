@@ -57,6 +57,15 @@ def find_customers(name):
     return exact or found
 
 
+def find_target(data):
+    """The customers a command means: by number ("id") if the bot gave one, else by name."""
+    customer_id = str(data.get("id") or "").strip().upper()
+    if customer_id:
+        customer = storage.find(storage.load("customers"), customer_id)
+        return [customer] if customer else []
+    return find_customers(data.get("name", ""))
+
+
 def check_command(command, data):
     """Check a command of the customer bot. Return an error message, or None if it is valid."""
     if command == "CREATE_CUSTOMER":
@@ -65,7 +74,9 @@ def check_command(command, data):
         return f"{command} is not a customer command."
     if command == "SHOW_CUSTOMER" and not str(data.get("name") or "").strip():  # list of all customers
         return None
-    matches = find_customers(data.get("name", ""))
+    matches = find_target(data)
+    if not matches and str(data.get("id") or "").strip():
+        return f"There is no customer {data['id']}. Which customer do you mean?"  # "which customer": the chooser opens
     if not matches:
         return f"There is no customer called {data.get('name')}."
     if command == "SHOW_CUSTOMER":
@@ -102,7 +113,7 @@ def build_proposal(command, data):
         body = {"name": data["name"].strip(), "address": data["address"].strip()}
         return {"method": "POST", "path": "/customers", "body": body,
                 "summary": f"Create customer: {body['name']} | {body['address']}"}
-    customer = find_customers(data["name"])[0]
+    customer = find_target(data)[0]
     if command == "UPDATE_CUSTOMER":
         body = {"name": customer["name"], "address": customer["address"], data["field"]: data["value"].strip()}
         return {"method": "PUT", "path": f"/customers/{customer['id']}", "body": body,

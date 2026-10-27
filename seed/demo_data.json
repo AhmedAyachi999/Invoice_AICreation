@@ -1,0 +1,395 @@
+{
+  "customers": [
+    {
+      "id": "CUS-001",
+      "name": "Felix Hartmann",
+      "address": "Seweg 4 24103 Kiel"
+    },
+    {
+      "id": "CUS-002",
+      "name": "Greta Hartman",
+      "address": "Lindenallee 12, 20259 Hamburg"
+    },
+    {
+      "id": "CUS-003",
+      "name": "Jonas Müller",
+      "address": "Bahnhofstr. 3, 80335 München"
+    },
+    {
+      "id": "CUS-004",
+      "name": "Lena Müller",
+      "address": "Vogelpothsweg 102"
+    },
+    {
+      "id": "CUS-005",
+      "name": "Paul Müller-Lang",
+      "address": "Marktplatz 1, 70173 Stuttgart"
+    },
+    {
+      "id": "CUS-006",
+      "name": "Anna Schmidt",
+      "address": "Rosenstr. 9, 10115 Berlin"
+    },
+    {
+      "id": "CUS-007",
+      "name": "Annabel Schmitt",
+      "address": "Hafenstr. 21, 28195 Bremen"
+    },
+    {
+      "id": "CUS-008",
+      "name": "Karl Becker",
+      "address": "Ringstr. 5, 01067 Dresden"
+    },
+    {
+      "id": "CUS-009",
+      "name": "Karla Bäcker",
+      "address": "Schulweg 2, 04109 Leipzig"
+    },
+    {
+      "id": "CUS-010",
+      "name": "Omar Haddad",
+      "address": "Mühlenweg 8, 30159 Hannover"
+    },
+    {
+      "id": "CUS-011",
+      "name": "Sofia Rossi",
+      "address": "Kirchplatz 6, 90402 Nürnberg"
+    },
+    {
+      "id": "CUS-012",
+      "name": "Tim Wagner",
+      "address": "Feldstr. 14, 44135 Dortmund"
+    },
+    {
+      "id": "CUS-013",
+      "name": "Felix Goevert",
+      "address": "Bruthstrasse 159, 44227"
+    },
+    {
+      "id": "CUS-014",
+      "name": "Siwar",
+      "address": "Hearts 6 44526 HD"
+    },
+    {
+      "id": "CUS-015",
+      "name": "Ahmed",
+      "address": "Baroper Str. 331 44227"
+    },
+    {
+      "id": "CUS-016",
+      "name": "Khalil Sahnoun",
+      "address": "Baroper Str 209"
+    },
+    {
+      "id": "CUS-017",
+      "name": "Khalil Sahnoun",
+      "address": "Baroper Str 209"
+    }
+  ],
+  "products": [
+    {
+      "id": "PRD-001",
+      "name": "Desk Lamp",
+      "sell_price": 29.9
+    },
+    {
+      "id": "PRD-002",
+      "name": "Desk Lamp Pro",
+      "sell_price": 49.9
+    },
+    {
+      "id": "PRD-003",
+      "name": "Office Chair",
+      "sell_price": 189.0
+    },
+    {
+      "id": "PRD-004",
+      "name": "Office Chair Comfort",
+      "sell_price": 249.0
+    },
+    {
+      "id": "PRD-005",
+      "name": "USB Cable 1m",
+      "sell_price": 6.5
+    },
+    {
+      "id": "PRD-006",
+      "name": "USB Cable 2m",
+      "sell_price": 8.5
+    },
+    {
+      "id": "PRD-007",
+      "name": "Laptop Stand",
+      "sell_price": 39.0
+    },
+    {
+      "id": "PRD-008",
+      "name": "Monitor 24",
+      "sell_price": 159.0
+    },
+    {
+      "id": "PRD-009",
+      "name": "Monitor 27",
+      "sell_price": 10.0
+    },
+    {
+      "id": "PRD-010",
+      "name": "Notebook A5",
+      "sell_price": 3.2
+    },
+    {
+      "id": "PRD-011",
+      "name": "Computer",
+      "sell_price": 1500.0
+    },
+    {
+      "id": "PRD-012",
+      "name": "Laptop RTX 3050",
+      "sell_price": 1600.0
+    },
+    {
+      "id": "PRD-013",
+      "name": "Zinou",
+      "sell_price": 10.0
+    }
+  ],
+  "invoices": [
+    {
+      "id": "INV-001",
+      "customer_id": "CUS-001",
+      "date": "02/09/2026",
+      "due_date": "02/10/2026",
+      "status": "paid",
+      "lines": [
+        {
+          "line": 1,
+          "product_id": "PRD-001",
+          "quantity": 2,
+          "unit_price": 29.9
+        },
+        {
+          "line": 2,
+          "product_id": "PRD-005",
+          "quantity": 5,
+          "unit_price": 6.5
+        }
+      ]
+    },
+    {
+      "id": "INV-003",
+      "customer_id": "CUS-002",
+      "date": "20/09/2026",
+      "due_date": "20/10/2026",
+      "status": "unpaid",
+      "lines": [
+        {
+          "line": 1,
+          "product_id": "PRD-008",
+          "quantity": 2,
+          "unit_price": 159.0
+        },
+        {
+          "line": 2,
+          "product_id": "PRD-006",
+          "quantity": 2,
+          "unit_price": 8.5
+        }
+      ]
+    },
+    {
+      "id": "INV-004",
+      "customer_id": "CUS-003",
+      "date": "01/10/2026",
+      "due_date": "31/10/2026",
+      "status": "unpaid",
+      "lines": [
+        {
+          "line": 1,
+          "product_id": "PRD-007",
+          "quantity": 3,
+          "unit_price": 39.0
+        }
+      ]
+    },
+    {
+      "id": "INV-005",
+      "customer_id": "CUS-004",
+      "date": "03/10/2026",
+      "due_date": "02/11/2026",
+      "status": "paid",
+      "lines": [
+        {
+          "line": 1,
+          "product_id": "PRD-010",
+          "quantity": 20,
+          "unit_price": 3.2
+        },
+        {
+          "line": 2,
+          "product_id": "PRD-002",
+          "quantity": 1,
+          "unit_price": 49.9
+        }
+      ]
+    },
+    {
+      "id": "INV-006",
+      "customer_id": "CUS-006",
+      "date": "05/10/2026",
+      "due_date": "04/11/2026",
+      "status": "unpaid",
+      "lines": [
+        {
+          "line": 1,
+          "product_id": "PRD-004",
+          "quantity": 2,
+          "unit_price": 249.0
+        },
+        {
+          "line": 2,
+          "product_id": "PRD-009",
+          "quantity": 2,
+          "unit_price": 229.0
+        }
+      ]
+    },
+    {
+      "id": "INV-007",
+      "customer_id": "CUS-008",
+      "date": "06/10/2026",
+      "due_date": "05/11/2026",
+      "status": "paid",
+      "lines": [
+        {
+          "line": 1,
+          "product_id": "PRD-005",
+          "quantity": 10,
+          "unit_price": 6.5
+        }
+      ]
+    },
+    {
+      "id": "INV-008",
+      "customer_id": "CUS-010",
+      "date": "07/10/2026",
+      "due_date": "06/11/2026",
+      "status": "unpaid",
+      "lines": [
+        {
+          "line": 1,
+          "product_id": "PRD-001",
+          "quantity": 1,
+          "unit_price": 29.9
+        },
+        {
+          "line": 2,
+          "product_id": "PRD-009",
+          "quantity": 1,
+          "unit_price": 229.0
+        }
+      ]
+    },
+    {
+      "id": "INV-009",
+      "customer_id": "CUS-013",
+      "date": "10/09/2026",
+      "due_date": "15/09/2026",
+      "status": "unpaid",
+      "lines": [
+        {
+          "line": 1,
+          "product_id": "PRD-011",
+          "quantity": 2,
+          "unit_price": 1000.0
+        }
+      ]
+    },
+    {
+      "id": "INV-010",
+      "customer_id": "CUS-013",
+      "date": "09/10/2026",
+      "due_date": "21/10/2026",
+      "status": "unpaid",
+      "lines": [
+        {
+          "line": 1,
+          "product_id": "PRD-011",
+          "quantity": 1,
+          "unit_price": 1500.0
+        }
+      ]
+    },
+    {
+      "id": "INV-011",
+      "customer_id": "CUS-008",
+      "date": "09/10/2026",
+      "due_date": "15/10/2026",
+      "status": "paid",
+      "lines": [
+        {
+          "line": 1,
+          "product_id": "PRD-011",
+          "quantity": 1,
+          "unit_price": 1500.0
+        },
+        {
+          "line": 2,
+          "product_id": "PRD-011",
+          "quantity": 1,
+          "unit_price": 1500.0
+        }
+      ]
+    },
+    {
+      "id": "INV-012",
+      "customer_id": "CUS-001",
+      "date": "09/10/2026",
+      "due_date": "15/10/2026",
+      "status": "unpaid",
+      "lines": [
+        {
+          "line": 1,
+          "product_id": "PRD-011",
+          "quantity": 1,
+          "unit_price": 1500.0
+        },
+        {
+          "line": 2,
+          "product_id": "PRD-002",
+          "quantity": 1,
+          "unit_price": 49.9
+        }
+      ]
+    },
+    {
+      "id": "INV-013",
+      "customer_id": "CUS-015",
+      "date": "14/10/2026",
+      "due_date": "28/10/2026",
+      "status": "unpaid",
+      "lines": [
+        {
+          "line": 1,
+          "product_id": "PRD-013",
+          "quantity": 1,
+          "unit_price": 10.0
+        }
+      ]
+    },
+    {
+      "id": "INV-014",
+      "customer_id": "CUS-016",
+      "date": "17/10/2026",
+      "due_date": "31/10/2026",
+      "status": "unpaid",
+      "lines": [
+        {
+          "line": 1,
+          "product_id": "PRD-008",
+          "quantity": 1,
+          "unit_price": 159.0
+        }
+      ]
+    }
+  ]
+}
