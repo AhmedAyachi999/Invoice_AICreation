@@ -23,6 +23,13 @@ def system_prompt(model):
     return re.search(r'SYSTEM """(.*?)"""', text, re.DOTALL).group(1)
 
 
+@functools.cache
+def example_names(model):
+    """The record names in a bot's examples, e.g. "inv-product-bot" -> {"Kettle Varo", ...} (read once).
+    A question that names one of them, while the user never wrote it, was copied from the examples."""
+    return set(re.findall(r'"(?:name|customer|product)":\s*"([^"]+)"', system_prompt(model)))
+
+
 class ModelError(Exception):
     """The language model could not give an answer (not reachable, too slow, or an unexpected answer)."""
 
@@ -162,6 +169,10 @@ def converse(model, check_command, build_proposal, answer, conversation_id, mess
         reply = "Sorry, I didn't understand that. Please say it again in other words."
     # "open": the task is not finished (a question or an error), so the user's next message belongs to this bot
     if command is None:
+        # the bot wrote a sentence (a question): did it copy a record name from its examples?
+        said = " ".join(m["content"] for m in messages if m["role"] == "user").lower()
+        if PYTHON and any(name.lower() in reply.lower() and name.lower() not in said for name in example_names(model)):
+            reply = f"Which {model.split('-')[1]} do you mean?"   # "inv-product-bot" -> "Which product do you mean?"
         messages.append({"role": "assistant", "content": reply})
         return {"conversation_id": conversation_id, "reply": reply, "open": not reply.startswith("Sorry, I can only")}
     if PYTHON:

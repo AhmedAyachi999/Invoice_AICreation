@@ -35,12 +35,11 @@ def action(reasoning):
 def route(message):
     """Ask the router bot which bot a message belongs to: 'question', 'customer', 'product', 'invoice', or None.
     The bot thinks step by step first; only the word after 'Route:' counts.
-    If the bot repeats its instructions instead (it read "remove the customer" as "remove the customer route"),
-    Python asks once more with the message marked as a user message.
+    The message is sent as "User: <message>", like the examples, so the bot sorts it instead of obeying it.
     Returns (route, reasoning): the reasoning is the bot's text before 'Route:', shown to the user."""
-    reply = bot.chat(ROUTER, [{"role": "user", "content": message}])
-    if bot.PYTHON and "The routes:" in reply:  # the bot repeated its instructions: one retry, clearly marked
-        reply = bot.chat(ROUTER, [{"role": "user", "content": f'Sort this user message: "{message}"'}])
+    # "User: " like the examples in the Modelfile: the bot sorts the message instead of reading it as an order
+    # about its own text ("remove Tim Wagner" -> "There is no Tim Wagner in the text")
+    reply = bot.chat(ROUTER, [{"role": "user", "content": f"User: {message}"}])
     reasoning, _, after = reply.rpartition("Route:")
     words = [word.strip(".:,") for word in (after if reasoning else reply).lower().split()]
     entity = next((word for word in words if word in BOTS or word == "question"), None)  # e.g. "assistant: customer"

@@ -135,7 +135,8 @@ def scenario_17(run):
         else:
             run.check(f'a real answer, not "{CANNOT}"', CANNOT not in answer)
         if "bill" in question:
-            run.check('delete steps: "delete an invoice" and Yes', "delete an invoice" in answer.lower()
+            run.check('delete steps: "delete an invoice" (or "remove an invoice", the chat understands both) and Yes',
+                      ("delete an invoice" in answer.lower() or "remove an invoice" in answer.lower())
                       and "yes" in answer.lower())
         if "client" in question:
             run.check('"add a customer"', "add a customer" in answer.lower())
