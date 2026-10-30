@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>AI Development Log</title>
+<style>
+  @page { size: A4; margin: 13mm 14mm; }
+  body { font-family: Arial, sans-serif; color: #222; font-size: 11px; line-height: 1.35; margin: 0; }
+  h1 { font-size: 19px; text-align: center; margin: 0 0 3px; }
+  .meta { text-align: center; color: #555; margin-bottom: 8px; }
+  h2 { font-size: 13px; margin: 10px 0 3px; }
+  .tag { font-size: 10.5px; font-weight: normal; padding: 1px 6px; border-radius: 4px; margin-left: 6px; }
+  .ok { background: #e3f1e5; color: #2e7d32; } .ko { background: #fbe4e4; color: #c62828; } .mix { background: #fdf2dc; color: #8a5a00; }
+  table { border-collapse: collapse; width: 100%; }
+  th, td { border: 1px solid #ccc; padding: 2px 6px; text-align: left; vertical-align: top; }
+  th { background: #eceff3; width: 105px; font-weight: 600; }
+  p { margin: 3px 0; }
+  .ep { page-break-inside: avoid; }
+</style>
+</head>
+<body>
+<h1>AI Invoice Assistant – AI development log</h1>
+<div class="meta">Claude Code (CLI) with Claude Opus · 7 of 12 episodes; full history in the git log</div>
+<p><b>Working rule</b> (CLAUDE.md): the agent shows each function and writes it only after the user's OK; tests and commits on request.</p>
+
+<div class="ep"><h2>1 · First AI feature: customer chat (Ep. 2–3) <span class="tag mix">modified</span></h2>
+<table>
+  <tr><th>Task / context</th><td>A bot that creates, changes and deletes customers by chat; llama3.2:3b, "the chat never saves".</td></tr>
+  <tr><th>Agent's proposal</th><td>Text commands parsed by Python; all customer data sent to the bot so it could choose.</td></tr>
+  <tr><th>Tools</th><td>File edits after approval, Python, Ollama, chat tests with the real bot.</td></tr>
+  <tr><th>Verification</th><td>8 chat tests: 2/8.</td></tr>
+  <tr><th>Outcome</th><td>Changed: Python looks records up and decides, the bot only extracts the request → 7/8.</td></tr>
+  <tr><th>Lesson</th><td>The small model must not hold data or make decisions – the basis of the whole design.</td></tr>
+</table></div>
+
+<div class="ep"><h2>2 · Checker bots and prompt tuning (Ep. 3–4) <span class="tag ko">rejected – failed</span></h2>
+<table>
+  <tr><th>Task / context</th><td>Make the bot more reliable by letting a second bot judge or correct its answers.</td></tr>
+  <tr><th>Agent's proposal</th><td>Judge and coach bots, a correction loop, spaCy name recognition, 21 tuning experiments by a sub-agent.</td></tr>
+  <tr><th>Tools</th><td>File edits, a sub-agent, many bot runs, package install.</td></tr>
+  <tr><th>Verification</th><td>Hold-out and fresh scenarios: the checker broke correct answers and invented placeholders; scores on known cases were too optimistic.</td></tr>
+  <tr><th>Outcome</th><td>Rejected; only a simpler, general prompt was kept.</td></tr>
+  <tr><th>Lesson</th><td>Another small model adds errors; checks belong in deterministic Python. Test on unseen wordings.</td></tr>
+</table></div>
+
+<div class="ep"><h2>3 · Products and invoices by a specialised agent (Ep. 5) <span class="tag ok">accepted</span></h2>
+<table>
+  <tr><th>Task / context</th><td>Build two more entities following the customer pattern.</td></tr>
+  <tr><th>Agent's proposal</th><td>An "entity-builder" agent description, then code, endpoints and bots for products and invoices.</td></tr>
+  <tr><th>Tools</th><td>A sub-agent with file and command access in the project.</td></tr>
+  <tr><th>Verification</th><td>End-to-end API test 30/30; bot weaknesses recorded as open problems.</td></tr>
+  <tr><th>Outcome</th><td>Accepted.</td></tr>
+  <tr><th>Lesson</th><td>A written-down method makes the agent fast and consistent – it also copies the method's weaknesses.</td></tr>
+</table></div>
+
+<div class="ep"><h2>4 · One chat with forms (Ep. 7–8) <span class="tag mix">modified</span></h2>
+<table>
+  <tr><th>Task / context</th><td>One chat for everything, turnover questions in plain English.</td></tr>
+  <tr><th>Agent's proposal</th><td>A router bot, an assistant with tools, pickers in the website, Python guards against invented records.</td></tr>
+  <tr><th>Tools</th><td>File edits incl. the website, bot runs, an acceptance-tester agent.</td></tr>
+  <tr><th>Verification</th><td>Repeated tests: the model copied ids wrong and dropped data in turnover answers.</td></tr>
+  <tr><th>Outcome</th><td>Changed: structured input goes through forms, and Python answers the turnover forms itself.</td></tr>
+  <tr><th>Lesson</th><td>Where input can be structured, a form beats asking the model to extract it.</td></tr>
+</table></div>
+
+<div class="ep"><h2>5 · Test scenarios by a test-writing agent (Ep. 10) <span class="tag ok">accepted</span></h2>
+<table>
+  <tr><th>Task / context</th><td>The project's own scenario tests, 5 runs per scenario.</td></tr>
+  <tr><th>Agent's proposal</th><td>A "test-writer" agent and one test script per group of scenarios.</td></tr>
+  <tr><th>Tools</th><td>May write only in tests/ and run them – never changes the code under test.</td></tr>
+  <tr><th>Verification</th><td>First run: 12 failing scenarios, 7 after fixes.</td></tr>
+  <tr><th>Outcome</th><td>Accepted; remaining failures documented, bots not tuned to the test sentences.</td></tr>
+  <tr><th>Lesson</th><td>Separating "who writes tests" from "who writes code" keeps the tests honest.</td></tr>
+</table></div>
+
+<div class="ep"><h2>6 · Course requirements and evaluation (Ep. 11) <span class="tag ok">accepted</span></h2>
+<table>
+  <tr><th>Task / context</th><td>Replaceable local model, failure handling, health check, container, evaluation with a baseline.</td></tr>
+  <tr><th>Agent's proposal</th><td>OpenAI-compatible API with configuration by environment, clear 503 errors, /health, a switch to run the bots without Python.</td></tr>
+  <tr><th>Tools</th><td>File edits after approval, tests with the model server off, the evaluation script.</td></tr>
+  <tr><th>Verification</th><td>Model server down → 503, data unchanged; bot alone 12/20, bot + Python 20/20.</td></tr>
+  <tr><th>Outcome</th><td>Accepted.</td></tr>
+  <tr><th>Lesson</th><td>A baseline makes the value of the Python layer measurable – and must be rerun after every change.</td></tr>
+</table></div>
+
+<div class="ep"><h2>7 · Code review before the submission <span class="tag mix">partly accepted</span></h2>
+<table>
+  <tr><th>Task / context</th><td>Read all code with the agent, remove dead code, fix design weaknesses.</td></tr>
+  <tr><th>Agent's proposal</th><td>Several refactorings, incl. restricting the assistant to questions – predicted to break nothing.</td></tr>
+  <tr><th>Tools</th><td>File edits after approval, full test runs, comparison with older commits, a separate test server.</td></tr>
+  <tr><th>Verification</th><td>Against the last commit, 4 scenarios got worse.</td></tr>
+  <tr><th>Outcome</th><td>The refactorings were discarded and the tested version kept; two small router fixes were accepted after the user tested them.</td></tr>
+  <tr><th>Lesson</th><td>The agent states predictions confidently; only tests against a known baseline show whether they hold.</td></tr>
+</table></div>
+</body>
+</html>

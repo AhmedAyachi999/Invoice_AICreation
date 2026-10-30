@@ -95,3 +95,8 @@ help with customers, products and invoices." It cannot delete several records at
 ## The assistant asks me again for something I already said – what can I do?
 Use the form or list it shows; values chosen there are always taken exactly as they are. If the chat seems
 stuck, reload the page to start a new conversation.
+
+## How do I start a new task?
+Reload the page before you start something new. The chat remembers everything said in the conversation, so an
+earlier question of the assistant can change how your new message is understood – for example, a new request is
+taken as the answer to a question it asked before. Reloading starts a fresh conversation; your saved data stays.

@@ -1,0 +1,2148 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "AI Invoice Assistant",
+    "description": "Manage customers, products and invoices and calculate the turnover - through plain CRUD endpoints\n(no AI) or through a chat with a local language model.\n\n**Local access:** the service runs on this computer only, at `http://127.0.0.1:8000` (no login, one local user).\nStart it with `python -m uvicorn api:app --app-dir app --host 127.0.0.1 --port 8000` or with Docker\n(`docker run -p 127.0.0.1:8000:8000 -v invoice-data:/service/data invoice-assistant`).\nInteractive documentation: `/docs`. Example: `curl http://127.0.0.1:8000/customers`\n\n**Formats:** dates are DD/MM/YYYY, amounts in EUR, numbers like CUS-001, PRD-001, INV-001 are given by the service.\n\n**The chat never saves.** It returns a reply or a checked proposal; the client saves a proposal with the matching\nCRUD call only after the user's \"Yes\". Without the model server the chat answers 503, everything else keeps working.\n\n**Errors:** every error answer is `{\"detail\": \"...\"}` - 400 data not valid, 404 number not found, 422 request body or\nparameter missing / wrong type, 503 model server or database not available.",
+    "version": "1.0"
+  },
+  "servers": [
+    {
+      "url": "http://127.0.0.1:8000",
+      "description": "local service (this computer only)"
+    }
+  ],
+  "paths": {
+    "/health": {
+      "get": {
+        "summary": "Health",
+        "description": "Is the service OK? The database must work (else 503); without the model server only the chat is down (degraded).",
+        "operationId": "health_health_get",
+        "responses": {
+          "200": {
+            "description": "The state of the service",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthOut"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The database cannot be read",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/customers": {
+      "get": {
+        "summary": "List Customers",
+        "description": "Return all customers.",
+        "operationId": "list_customers_customers_get",
+        "responses": {
+          "200": {
+            "description": "All customers",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/CustomerOut"
+                  },
+                  "type": "array",
+                  "title": "Response List Customers Customers Get"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Add Customer",
+        "description": "Create a customer and return it with its new number, or 400 if the data is not valid.",
+        "operationId": "add_customer_customers_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CustomerIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "The new customer with its number",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomerOut"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The database is not available",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The data is not valid (e.g. the name or address is missing)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/customers/{customer_id}": {
+      "get": {
+        "summary": "Get Customer",
+        "description": "Return one customer, or 404 if the number doesn't exist.",
+        "operationId": "get_customer_customers__customer_id__get",
+        "parameters": [
+          {
+            "name": "customer_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Customer Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The customer",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomerOut"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The database is not available",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No customer with this number",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "summary": "Change Customer",
+        "description": "Change name and address of a customer: 404 if the number doesn't exist, 400 if the data is not valid.",
+        "operationId": "change_customer_customers__customer_id__put",
+        "parameters": [
+          {
+            "name": "customer_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Customer Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CustomerIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The changed customer",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomerOut"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The database is not available",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The data is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No customer with this number",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "summary": "Remove Customer",
+        "description": "Delete a customer: 404 if the number doesn't exist, 400 if it still has invoices.",
+        "operationId": "remove_customer_customers__customer_id__delete",
+        "parameters": [
+          {
+            "name": "customer_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Customer Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The deleted customer",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomerOut"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The database is not available",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The customer is used in invoices",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No customer with this number",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/products": {
+      "get": {
+        "summary": "List Products",
+        "description": "Return all products.",
+        "operationId": "list_products_products_get",
+        "responses": {
+          "200": {
+            "description": "All products",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ProductOut"
+                  },
+                  "type": "array",
+                  "title": "Response List Products Products Get"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Add Product",
+        "description": "Create a product and return it with its new code, or 400 if the data is not valid.",
+        "operationId": "add_product_products_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProductIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "The new product with its code",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductOut"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The database is not available",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The data is not valid (e.g. the price is missing or negative)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/products/{product_id}": {
+      "get": {
+        "summary": "Get Product",
+        "description": "Return one product, or 404 if the code doesn't exist.",
+        "operationId": "get_product_products__product_id__get",
+        "parameters": [
+          {
+            "name": "product_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Product Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The product",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductOut"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The database is not available",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No product with this number",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "summary": "Change Product",
+        "description": "Change name and prices of a product: 404 if the code doesn't exist, 400 if the data is not valid.",
+        "operationId": "change_product_products__product_id__put",
+        "parameters": [
+          {
+            "name": "product_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Product Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProductIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The changed product",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductOut"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The database is not available",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The data is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No product with this number",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "summary": "Remove Product",
+        "description": "Delete a product: 404 if the code doesn't exist, 400 if an invoice line uses it.",
+        "operationId": "remove_product_products__product_id__delete",
+        "parameters": [
+          {
+            "name": "product_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Product Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The deleted product",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductOut"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The database is not available",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The product is used in an invoice",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No product with this number",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/invoices": {
+      "get": {
+        "summary": "List Invoices",
+        "description": "Return all invoices, each with its total.",
+        "operationId": "list_invoices_invoices_get",
+        "responses": {
+          "200": {
+            "description": "All invoices with lines and totals",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/InvoiceOut"
+                  },
+                  "type": "array",
+                  "title": "Response List Invoices Invoices Get"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Add Invoice",
+        "description": "Create an invoice and return it with its new number and total, or 400 if the data is not valid.",
+        "operationId": "add_invoice_invoices_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InvoiceIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "The new invoice with its number, lines and total",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvoiceOut"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The database is not available",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The data is not valid (e.g. unknown customer or product, wrong date)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/invoices/{invoice_id}": {
+      "get": {
+        "summary": "Get Invoice",
+        "description": "Return one invoice with its lines and total, or 404 if the number doesn't exist.",
+        "operationId": "get_invoice_invoices__invoice_id__get",
+        "parameters": [
+          {
+            "name": "invoice_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Invoice Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The invoice with lines and total",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvoiceOut"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The database is not available",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No invoice with this number",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "summary": "Change Invoice",
+        "description": "Change an invoice: 404 if the number doesn't exist, 400 if the data is not valid.",
+        "operationId": "change_invoice_invoices__invoice_id__put",
+        "parameters": [
+          {
+            "name": "invoice_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Invoice Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InvoiceIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The changed invoice",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvoiceOut"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The database is not available",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The data is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No invoice with this number",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "summary": "Remove Invoice",
+        "description": "Delete an invoice: 404 if the number doesn't exist, 400 if it is paid.",
+        "operationId": "remove_invoice_invoices__invoice_id__delete",
+        "parameters": [
+          {
+            "name": "invoice_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Invoice Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The deleted invoice",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvoiceOut"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The database is not available",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The invoice is paid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No invoice with this number",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/reports/customers": {
+      "get": {
+        "summary": "Report Customers",
+        "description": "R1: turnover per customer between start and end (DD/MM/YYYY, query parameters), or 400 if the period is not valid.",
+        "operationId": "report_customers_reports_customers_get",
+        "parameters": [
+          {
+            "name": "start",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Start date DD/MM/YYYY, included (due date of paid invoices)",
+              "examples": [
+                "01/01/2026"
+              ],
+              "title": "Start"
+            },
+            "description": "Start date DD/MM/YYYY, included (due date of paid invoices)"
+          },
+          {
+            "name": "end",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "End date DD/MM/YYYY, included",
+              "examples": [
+                "31/12/2026"
+              ],
+              "title": "End"
+            },
+            "description": "End date DD/MM/YYYY, included"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Turnover per customer, highest first (only paid invoices, by due date)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CustomerTurnover"
+                  },
+                  "title": "Response Report Customers Reports Customers Get"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The database is not available",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The period is not valid (dates DD/MM/YYYY, start before end)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/reports/products": {
+      "get": {
+        "summary": "Report Products",
+        "description": "R2: turnover and quantity per product between start and end (DD/MM/YYYY, query parameters), or 400 if the period is not valid.",
+        "operationId": "report_products_reports_products_get",
+        "parameters": [
+          {
+            "name": "start",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Start date DD/MM/YYYY, included (due date of paid invoices)",
+              "examples": [
+                "01/01/2026"
+              ],
+              "title": "Start"
+            },
+            "description": "Start date DD/MM/YYYY, included (due date of paid invoices)"
+          },
+          {
+            "name": "end",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "End date DD/MM/YYYY, included",
+              "examples": [
+                "31/12/2026"
+              ],
+              "title": "End"
+            },
+            "description": "End date DD/MM/YYYY, included"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Quantity and turnover per product, highest first (only paid invoices, by due date)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ProductTurnover"
+                  },
+                  "title": "Response Report Products Reports Products Get"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The database is not available",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The period is not valid (dates DD/MM/YYYY, start before end)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/reports/months": {
+      "get": {
+        "summary": "Report Months",
+        "description": "R3: turnover for each month of a year, optionally for one customer and/or one product (by number).\n400 if the year is not valid, 404 if the customer or product doesn't exist.",
+        "operationId": "report_months_reports_months_get",
+        "parameters": [
+          {
+            "name": "year",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Year, 4 digits",
+              "examples": [
+                "2026"
+              ],
+              "title": "Year"
+            },
+            "description": "Year, 4 digits"
+          },
+          {
+            "name": "customer_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Only this customer's invoices",
+              "examples": [
+                "CUS-008"
+              ],
+              "title": "Customer Id"
+            },
+            "description": "Only this customer's invoices"
+          },
+          {
+            "name": "product_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Only this product's lines",
+              "examples": [
+                "PRD-001"
+              ],
+              "title": "Product Id"
+            },
+            "description": "Only this product's lines"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "12 rows, January to December, also months with 0",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MonthTurnover"
+                  },
+                  "title": "Response Report Months Reports Months Get"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The database is not available",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The year is not a 4-digit year",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No customer or product with this number",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/chat": {
+      "post": {
+        "summary": "Chat",
+        "description": "The single chat: the router sends the message to the customer, product or invoice bot or to the assistant.\nNever saves.",
+        "operationId": "chat_chat_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChatIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "A reply or a proposal",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChatOut"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The language model or the database is not available",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/customers/chat": {
+      "post": {
+        "summary": "Customer Chat",
+        "description": "Send one message to the customer bot. Returns its question, or a proposal to confirm. Never saves.",
+        "operationId": "customer_chat_customers_chat_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChatIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "A reply or a proposal",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChatOut"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The language model or the database is not available",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/products/chat": {
+      "post": {
+        "summary": "Product Chat",
+        "description": "Send one message to the product bot. Returns its question, or a proposal to confirm. Never saves.",
+        "operationId": "product_chat_products_chat_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChatIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "A reply or a proposal",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChatOut"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The language model or the database is not available",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/invoices/chat": {
+      "post": {
+        "summary": "Invoice Chat",
+        "description": "Send one message to the invoice bot. Returns its question, or a proposal to confirm. Never saves.",
+        "operationId": "invoice_chat_invoices_chat_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChatIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "A reply or a proposal",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChatOut"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The language model or the database is not available",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/assistant/chat": {
+      "post": {
+        "summary": "Assistant Chat",
+        "description": "Ask the assistant (bot with tools). Returns its answer, or a proposal to confirm. Never saves.",
+        "operationId": "assistant_chat_assistant_chat_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChatIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "A reply or a proposal",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChatOut"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The language model or the database is not available",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/help": {
+      "post": {
+        "summary": "Help Chat",
+        "description": "Answer a question about using the software from the user guide (RAG, guide.py). Never saves.",
+        "operationId": "help_chat_help_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChatIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The answer from the user guide",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HelpOut"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The language model or the database is not available",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ChatIn": {
+        "properties": {
+          "message": {
+            "type": "string",
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Message"
+          },
+          "conversation_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Conversation Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "message"
+        ],
+        "title": "ChatIn",
+        "description": "One chat message from the frontend. conversation_id is empty on the first message."
+      },
+      "ChatOut": {
+        "properties": {
+          "conversation_id": {
+            "type": "string",
+            "title": "Conversation Id"
+          },
+          "reply": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reply"
+          },
+          "proposal": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ProposalOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "ui": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ui",
+            "description": "Forms the website opens, e.g. [\"dates\"] or [\"customer\"]"
+          },
+          "open": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Open",
+            "description": "True: the bot waits for an answer; the next message goes to it"
+          },
+          "entity": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Entity",
+            "description": "Which bot answered: customer, product, invoice or question"
+          },
+          "reasoning": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reasoning",
+            "description": "The router bot's reasoning, shown to the user"
+          }
+        },
+        "type": "object",
+        "required": [
+          "conversation_id"
+        ],
+        "title": "ChatOut",
+        "description": "The answer to one chat message: a reply (question, error or answer) or a proposal. Empty fields are left out."
+      },
+      "CustomerIn": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "address": {
+            "type": "string",
+            "title": "Address"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "address"
+        ],
+        "title": "CustomerIn",
+        "description": "The data a client sends to create or change a customer."
+      },
+      "CustomerOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "examples": [
+              "CUS-008"
+            ]
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "address": {
+            "type": "string",
+            "title": "Address"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "address"
+        ],
+        "title": "CustomerOut",
+        "description": "A customer as the API returns it."
+      },
+      "CustomerTurnover": {
+        "properties": {
+          "customer_id": {
+            "type": "string",
+            "title": "Customer Id",
+            "examples": [
+              "CUS-008"
+            ]
+          },
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "examples": [
+              "Karl Becker"
+            ]
+          },
+          "turnover": {
+            "type": "number",
+            "title": "Turnover",
+            "examples": [
+              3065.0
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "customer_id",
+          "name",
+          "turnover"
+        ],
+        "title": "CustomerTurnover",
+        "description": "One row of R1: turnover per customer."
+      },
+      "ErrorOut": {
+        "properties": {
+          "detail": {
+            "type": "string",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "required": [
+          "detail"
+        ],
+        "title": "ErrorOut",
+        "description": "The body of every error answer (400, 404, 503), e.g. {\"detail\": \"Customer CUS-999 not found\"}."
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "HealthOut": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "title": "Status",
+            "examples": [
+              "ok"
+            ]
+          },
+          "database": {
+            "type": "string",
+            "title": "Database",
+            "examples": [
+              "ok"
+            ]
+          },
+          "model_server": {
+            "type": "string",
+            "title": "Model Server",
+            "examples": [
+              "ok"
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "status",
+          "database",
+          "model_server"
+        ],
+        "title": "HealthOut",
+        "description": "The state of the service: \"degraded\" = the model server is unreachable, only the chat is down."
+      },
+      "HelpOut": {
+        "properties": {
+          "reply": {
+            "type": "string",
+            "title": "Reply"
+          }
+        },
+        "type": "object",
+        "required": [
+          "reply"
+        ],
+        "title": "HelpOut",
+        "description": "The answer of the Help bot, with the sections of the user guide it used."
+      },
+      "InvoiceIn": {
+        "properties": {
+          "customer_id": {
+            "type": "string",
+            "title": "Customer Id"
+          },
+          "date": {
+            "type": "string",
+            "title": "Date"
+          },
+          "due_date": {
+            "type": "string",
+            "title": "Due Date"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "lines": {
+            "items": {
+              "$ref": "#/components/schemas/LineIn"
+            },
+            "type": "array",
+            "title": "Lines"
+          }
+        },
+        "type": "object",
+        "required": [
+          "customer_id",
+          "date",
+          "due_date",
+          "status",
+          "lines"
+        ],
+        "title": "InvoiceIn",
+        "description": "The data a client sends to create or change an invoice. Dates are DD/MM/YYYY, status paid or unpaid."
+      },
+      "InvoiceOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "examples": [
+              "INV-004"
+            ]
+          },
+          "customer_id": {
+            "type": "string",
+            "title": "Customer Id",
+            "examples": [
+              "CUS-008"
+            ]
+          },
+          "date": {
+            "type": "string",
+            "title": "Date",
+            "examples": [
+              "01/10/2026"
+            ]
+          },
+          "due_date": {
+            "type": "string",
+            "title": "Due Date",
+            "examples": [
+              "31/10/2026"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "title": "Status",
+            "examples": [
+              "unpaid"
+            ]
+          },
+          "lines": {
+            "items": {
+              "$ref": "#/components/schemas/LineOut"
+            },
+            "type": "array",
+            "title": "Lines"
+          },
+          "total": {
+            "type": "number",
+            "title": "Total",
+            "examples": [
+              59.8
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "customer_id",
+          "date",
+          "due_date",
+          "status",
+          "lines",
+          "total"
+        ],
+        "title": "InvoiceOut",
+        "description": "An invoice as the API returns it, with its lines and its total (calculated by Python)."
+      },
+      "LineIn": {
+        "properties": {
+          "product_id": {
+            "type": "string",
+            "title": "Product Id"
+          },
+          "quantity": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "Quantity"
+          },
+          "unit_price": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unit Price"
+          }
+        },
+        "type": "object",
+        "required": [
+          "product_id",
+          "quantity"
+        ],
+        "title": "LineIn",
+        "description": "One invoice line. Without unit_price the product's sell_price is used."
+      },
+      "LineOut": {
+        "properties": {
+          "line": {
+            "type": "integer",
+            "title": "Line",
+            "examples": [
+              1
+            ]
+          },
+          "product_id": {
+            "type": "string",
+            "title": "Product Id",
+            "examples": [
+              "PRD-001"
+            ]
+          },
+          "quantity": {
+            "type": "integer",
+            "title": "Quantity",
+            "examples": [
+              2
+            ]
+          },
+          "unit_price": {
+            "type": "number",
+            "title": "Unit Price",
+            "examples": [
+              29.9
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "line",
+          "product_id",
+          "quantity",
+          "unit_price"
+        ],
+        "title": "LineOut",
+        "description": "One saved invoice line: numbered, with the price of the day."
+      },
+      "MonthTurnover": {
+        "properties": {
+          "month": {
+            "type": "integer",
+            "title": "Month",
+            "examples": [
+              10
+            ]
+          },
+          "turnover": {
+            "type": "number",
+            "title": "Turnover",
+            "examples": [
+              1250.0
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "month",
+          "turnover"
+        ],
+        "title": "MonthTurnover",
+        "description": "One row of R3: the turnover of one month (1 = January ... 12 = December)."
+      },
+      "ProductIn": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "sell_price": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "Sell Price"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "sell_price"
+        ],
+        "title": "ProductIn",
+        "description": "The data a client sends to create or change a product. The price may be a number or text like \"12,5\"."
+      },
+      "ProductOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "examples": [
+              "PRD-001"
+            ]
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "sell_price": {
+            "type": "number",
+            "title": "Sell Price",
+            "examples": [
+              29.9
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "sell_price"
+        ],
+        "title": "ProductOut",
+        "description": "A product as the API returns it."
+      },
+      "ProductTurnover": {
+        "properties": {
+          "product_id": {
+            "type": "string",
+            "title": "Product Id",
+            "examples": [
+              "PRD-001"
+            ]
+          },
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "examples": [
+              "Desk Lamp"
+            ]
+          },
+          "quantity": {
+            "type": "integer",
+            "title": "Quantity",
+            "examples": [
+              12
+            ]
+          },
+          "turnover": {
+            "type": "number",
+            "title": "Turnover",
+            "examples": [
+              358.8
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "product_id",
+          "name",
+          "quantity",
+          "turnover"
+        ],
+        "title": "ProductTurnover",
+        "description": "One row of R2: quantity sold and turnover per product."
+      },
+      "ProposalOut": {
+        "properties": {
+          "method": {
+            "type": "string",
+            "title": "Method",
+            "examples": [
+              "DELETE"
+            ]
+          },
+          "path": {
+            "type": "string",
+            "title": "Path",
+            "examples": [
+              "/customers/CUS-003"
+            ]
+          },
+          "body": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Body",
+            "description": "The body for the CRUD call: like CustomerIn, ProductIn or InvoiceIn; empty for DELETE"
+          },
+          "summary": {
+            "type": "string",
+            "title": "Summary",
+            "examples": [
+              "Delete customer CUS-003: Tim Wagner | Lindenweg 4, 48143 Münster"
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "method",
+          "path",
+          "summary"
+        ],
+        "title": "ProposalOut",
+        "description": "A checked change the user must confirm: on Yes the client sends method + path + body to the CRUD endpoint."
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      }
+    }
+  }
+}

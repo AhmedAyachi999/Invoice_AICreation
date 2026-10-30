@@ -1,6 +1,6 @@
 """Evaluation: the bots alone (A, PYTHON off) vs the bots with Python's corrections and forms (B, PYTHON on, the
 website as it is). With PYTHON off there are no forms and no Python checks: the bot's raw command goes straight to
-answer()/build_proposal(); an exception there counts as end not correct. RUNS = 1.
+answer()/build_proposal(); an exception there counts as end not correct. RUNS = 2 (to see whether the results are stable).
 The simulated user answers whatever the bot asks, like a real user, from the case's answer maps:
 "forms" {ui: what static/app.js sends} and "typed" [(keywords in the question, typed answer)], first match wins,
 else "default". A types every answer. B sends the form when a mapped form opens (again and again if asked again),
@@ -15,7 +15,7 @@ from chat import assistant, bot  # noqa: E402
 from fastapi.testclient import TestClient  # noqa: E402
 
 STRICT = TestClient(api.app)  # POST /chat like the website, but an app exception comes back as itself (not HTTP 500)
-RUNS = 1
+RUNS = 2
 MAX_MESSAGES = 6  # per run: the first message + the answers / forms
 ASKS = ("please enter", "please write", "again")  # a request to the user, also without "?"
 NEW_ADDRESS = "Bahnhofstr. 1, 53111 Bonn"

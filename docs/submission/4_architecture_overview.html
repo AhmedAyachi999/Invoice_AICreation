@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Architecture Overview</title>
+<style>
+  @page { size: A4; margin: 14mm 14mm; }
+  * { box-sizing: border-box; }
+  body { zoom: .86; font-family: "Segoe UI", Arial, sans-serif; color: #222; margin: 0; font-size: 12px; }
+  h1 { font-size: 23px; margin: 0 0 14px; }
+  h2 { font-size: 16px; color: #2e6db4; margin: 18px 0 8px; }
+
+  .layer { display: grid; grid-template-columns: 78px 1fr; align-items: center; }
+  .label { color: #888; font-size: 11px; font-weight: 600; letter-spacing: .05em; }
+  .box { border: 2px solid; border-radius: 9px; padding: 8px 10px; text-align: center; }
+  .box b { font-size: 14px; display: block; }
+  .sub { color: #555; font-size: 11px; }
+  .chips { display: flex; gap: 6px; justify-content: center; margin-top: 6px; flex-wrap: wrap; }
+  .chip { border: 1px solid; border-radius: 5px; padding: 3px 8px; background: #fff; font-size: 11.5px; }
+
+  .client { border-color: #6b9bd1; background: #eef5fc; }
+  .client .chip { border-color: #6b9bd1; }
+  .api { border-color: #8f74c9; background: #f4f0fb; }
+  .api .chip { border-color: #8f74c9; }
+  .services { border-color: #e0a63a; background: #fdf6e8; }
+  .services .chip { border-color: #e0a63a; }
+  .domain { border-color: #5aa86a; background: #eef7ef; }
+  .domain .chip { border-color: #5aa86a; }
+  .data { border-color: #888; background: #f0f0f0; }
+  .llm { border: 2px dashed #d97a7a; background: #fcecec; }
+  .config { border: 1px solid #bbb; background: #fafafa; text-align: left; font-size: 10.5px; padding: 6px 8px; }
+  .config code { font-size: 10.5px; }
+
+  .arrow { text-align: center; color: #666; font-size: 10.5px; line-height: 1.1; padding: 3px 0; }
+  .arrow.up::before { content: "▲ ▼"; }
+  .arrow::before { content: "▼"; display: block; color: #666; font-size: 14px; }
+
+  .container { border: 2px dashed #5b7fa6; border-radius: 12px; padding: 22px 10px 10px; position: relative; margin-top: 14px; }
+  .container > .tag { position: absolute; top: -10px; left: 14px; background: #fff; padding: 0 6px; color: #5b7fa6;
+                      font-weight: 600; font-size: 11.5px; }
+
+  .row { display: grid; grid-template-columns: 1fr 190px; gap: 12px; align-items: stretch; }
+  .side { display: flex; flex-direction: column; gap: 8px; }
+
+  .model { display: grid; grid-template-columns: 1fr 110px 1fr; row-gap: 10px; align-items: center; }
+  .table { border: 2px solid #5aa86a; border-radius: 8px; overflow: hidden; font-size: 11.5px; }
+  .table .head { background: #5aa86a; color: #fff; font-weight: 700; padding: 5px 9px; }
+  .table div.f { padding: 2px 9px; }
+  .table div.f:first-of-type { padding-top: 6px; }
+  .table div.f:last-child { padding-bottom: 6px; }
+  .rel { white-space: nowrap; text-align: center; color: #2e6db4; font-size: 10.5px; }
+  .rel b { display: block; }
+  .vrel { grid-column: 3; text-align: center; color: #2e6db4; font-size: 10.5px; }
+  .notes { font-size: 10.5px; color: #555; margin-top: 10px; }
+  .notes li { margin: 2px 0; }
+</style>
+</head>
+<body>
+<h1>AI Invoice Assistant – architecture</h1>
+
+<div class="layer">
+  <div class="label">CLIENT</div>
+  <div class="box client"><b>Web browser</b>
+    <span class="sub">static/ · one chat · forms and pickers · Yes / No · Help · "AI" badge on model output</span></div>
+</div>
+<div class="layer"><div></div><div class="arrow">HTTP / JSON · 127.0.0.1:8000 (other programs: the same REST API)</div></div>
+
+<div class="layer">
+  <div></div>
+  <div class="container"><span class="tag">The service – one Docker container (python:3.12-slim) · <code>uvicorn api:app</code></span>
+
+    <div class="layer">
+      <div class="label">API</div>
+      <div class="box api"><b>REST API · FastAPI (api.py)</b>
+        <div class="chips"><span class="chip">/chat</span><span class="chip">/help</span><span class="chip">CRUD</span>
+          <span class="chip">/reports</span><span class="chip">/health</span></div>
+        <div class="sub" style="margin-top:5px">documented with OpenAPI at /docs · errors 400 / 404 / 422 / 503</div></div>
+    </div>
+    <div class="layer"><div></div><div class="arrow">chat messages · CRUD and reports go straight to the domain (no AI)</div></div>
+
+    <div class="layer">
+      <div class="label">SERVICES</div>
+      <div class="row">
+        <div class="box services"><b>Chat services (app/chat)</b>
+          <div class="chips"><span class="chip">router</span><span class="chip">bot – change bots + guards</span>
+            <span class="chip">assistant – tools</span><span class="chip">guide – RAG on user_guide.md</span></div>
+          <div class="sub" style="margin-top:5px">the AI understands and proposes · Python checks · nothing is saved by the chat</div></div>
+        <div class="side">
+          <div class="config"><b>Configuration (environment)</b><br>
+            <code>LLM_BASE_URL</code> · <code>LLM_MODEL</code><br><code>LLM_TEMPERATURE</code> · <code>LLM_TIMEOUT</code><br>
+            <code>LLM_EMBED_MODEL</code> · <code>INVOICE_DB_PATH</code></div>
+        </div>
+      </div>
+    </div>
+    <div class="layer"><div></div><div class="arrow">checks · proposals · answers</div></div>
+
+    <div class="layer">
+      <div class="label">DOMAIN</div>
+      <div class="box domain"><b>Business logic (app/entities · app/core/reports) – no AI</b>
+        <div class="chips"><span class="chip">customers</span><span class="chip">products</span>
+          <span class="chip">invoices</span><span class="chip">reports (turnover R1–R3)</span></div></div>
+    </div>
+    <div class="layer"><div></div><div class="arrow"></div></div>
+
+    <div class="layer">
+      <div class="label">DATA</div>
+      <div class="row" style="grid-template-columns: 1fr 1fr;">
+        <div class="box data"><b>storage.py</b><span class="sub">app/core · the only access to the database</span></div>
+        <div class="box data"><b>SQLite · invoices.db</b><span class="sub">volume /service/data · filled from seed/demo_data.json on first start</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="layer"><div></div><div class="arrow up">the chat services (router, bots, assistant, guide) call the model server through the OpenAI-compatible API · LLM_BASE_URL · /v1/chat/completions · /v1/embeddings</div></div>
+<div class="layer">
+  <div class="label">MODEL<br>SERVER</div>
+  <div class="box llm"><b>Ollama (outside the container, on the host)</b>
+    <span class="sub">llama3.2:3b, temperature 0 – as inv-router-bot, inv-customer-bot, inv-product-bot, inv-invoice-bot
+      (modelfiles/) and for the assistant and Help · nomic-embed-text for Help (RAG)<br>
+      replaceable by any OpenAI-compatible server (e.g. LM Studio, llama.cpp) through the configuration</span></div>
+</div>
+
+<h2>Data model</h2>
+<div class="model">
+  <div class="table"><div class="head">customers</div><div class="f"><b>id</b> CUS-001</div><div class="f">name</div><div class="f">address</div></div>
+  <div class="rel"><b>1 ──────── n</b>has</div>
+  <div class="table"><div class="head">invoices</div><div class="f"><b>id</b> INV-001</div><div class="f">customer_id</div>
+    <div class="f">date · due_date</div><div class="f">status (paid / unpaid)</div></div>
+
+  <div></div><div></div><div class="vrel"><b>1</b>│<br><b>n</b></div>
+
+  <div class="table"><div class="head">products</div><div class="f"><b>id</b> PRD-001</div><div class="f">name</div><div class="f">sell_price</div></div>
+  <div class="rel"><b>1 ──────── n</b>used in</div>
+  <div class="table"><div class="head">invoice_lines</div><div class="f">invoice_id · line</div><div class="f">product_id</div>
+    <div class="f">quantity</div><div class="f">unit_price (price of the day)</div></div>
+</div>
+
+<ul class="notes">
+  <li><b>Service boundary:</b> the container owns its database; other programs use only the REST API, never the database.</li>
+  <li><b>Without the model server</b> the service still starts: tables, CRUD and reports work, /health says "degraded", the chat answers 503.</li>
+  <li><b>Numbers</b> (CUS-, PRD-, INV-) and all <b>arithmetic</b> (totals, turnover) are done by Python, never by the AI.</li>
+</ul>
+</body>
+</html>
