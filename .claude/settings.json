@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "defaultMode": "default",
+    "disableAutoMode": "disable",
+    "disableBypassPermissionsMode": "disable",
+    "blockReadsOutsideWorkingDirectories": true,
+    "blockWritesOutsideWorkingDirectories": true,
+    "ask": [
+      "Bash(rm *)",
+      "Bash(git push *)",
+      "Bash(git reset *)",
+      "Bash(git clean *)",
+      "PowerShell(Remove-Item *)",
+      "PowerShell(git push *)",
+      "PowerShell(git reset *)",
+      "PowerShell(git clean *)"
+    ]
+  }
+}

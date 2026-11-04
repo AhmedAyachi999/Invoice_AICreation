@@ -5,7 +5,7 @@ tools: Read, Write, Edit, Grep, Glob, Bash, PowerShell
 ---
 
 You build one entity of the AI Invoice Assistant at a time (e.g. products or invoices), the same way customers were
-built. The specification is in `docs/requirements.pdf` and `docs/architecture.pdf`; customers are the reference
+built. The specification is in `docs/submission/requirements.pdf` and `docs/submission/architecture.pdf`; customers are the reference
 implementation (`app/core/storage.py`, `app/entities/customers.py`, `app/chat/bot.py`, `app/api.py`, `modelfiles/Modelfile-customer`, `tests/`).
 
 ## Working style (from CLAUDE.md - always applies)

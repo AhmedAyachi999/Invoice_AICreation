@@ -53,8 +53,8 @@ browser (static/) ──HTTP/JSON──▶ REST API (app/api.py) ──┬─▶
 - **Saving:** the website sends the proposal to the CRUD endpoint after the user's Yes; the endpoint checks again.
 - **Reports and CRUD** never use the AI.
 
-Diagram: [4_architecture_overview.pdf](docs/submission/4_architecture_overview.pdf). Step-by-step flows:
-`docs/dataflow_scenarios.pdf`. Design decisions: `docs/architecture.pdf`.
+Diagram: [4_architecture_overview.pdf](docs/submission/4_architecture_overview.pdf). Design decisions:
+`docs/submission/architecture.pdf`.
 
 ```
 app/
@@ -70,7 +70,7 @@ modelfiles/       the bots' instructions (router, customer, product, invoice)
 static/           the website
 seed/             example data for a new database (invented, no real persons)
 tests/            automated tests and results (tests/results/)
-docs/             requirements, architecture, model choice, user guide, open problems, submission documents
+docs/             user guide, open problems, submission documents (incl. requirements, design decisions, model choice)
 data/             the database invoices.db (created on first start, not in git)
 ```
 
@@ -123,7 +123,7 @@ but the chat keeps working.
 | Chat model | **llama3.2:3b** (2.0 GB), temperature 0 – used as four bots built from `modelfiles/` (`inv-router-bot`, `inv-customer-bot`, `inv-product-bot`, `inv-invoice-bot`) and directly for the assistant and Help |
 | Embedding model | **nomic-embed-text** (274 MB) – Help (RAG) |
 | Prompts | the bots' instructions: `modelfiles/Modelfile-*`; assistant: `SYSTEM` in `app/chat/assistant.py`; Help: `SYSTEM` in `app/chat/guide.py` |
-| Why this model | given by the task, fits a 4 GB GPU, best published format-calling score of the small models (`docs/model_choice.pdf`) |
+| Why this model | given by the task, fits a 4 GB GPU, best published format-calling score of the small models (`docs/submission/model_choice.pdf`) |
 | Tested on | Windows 11, 48 GB RAM, NVIDIA GeForce GTX 1650 (4 GB); the model needs about 2.3 GB (GPU or RAM) |
 
 **Install and start the model server:**
@@ -207,14 +207,25 @@ What every scenario tests and its last result: [tests/README.md](tests/README.md
 
 The project was built with **Claude Code** (CLI, Windows) using **Claude Opus** (Anthropic).
 
-The agent worked in the project folder; it accessed other folders only when the user explicitly asked for it
-(e.g. the project description in Downloads). Restrictions came from the harness's permission system: commands and
-file changes needed the user's approval, except three read-only commands allowed in
-`.claude/settings.local.json` (`pip list`, `Copy-Item`, `Get-Content`). Code changes followed the rule in
-`CLAUDE.md`: the agent shows each function first and writes it only after the user's OK. Tests and the website were
-used to check every change; commits and pushes were made only on the user's request. No secrets or API keys exist
-in the project. Network access was not restricted, because the agent installs packages and local models for the
-project.
+**How the agent was restricted during development:** only by the harness's permission system, not by a sandbox: no
+container, no virtual machine, no OS isolation. Commands and file changes needed the user's approval, or ran in auto
+mode, where an automatic classifier replaced most prompts. Three commands were allowed without asking in
+`.claude/settings.local.json`: `pip list`, `Copy-Item` and `Get-Content`; the last two could reach any folder. The
+agent normally worked in the project folder, but nothing enforced this: personal files outside it were reachable, and
+once, while looking for the project description in Downloads, the agent listed the names of the PDF files there.
+Network access was not restricted, because the agent installs packages and local models.
+
+**Rules from 04/11/2026** (`.claude/settings.json`): auto mode and bypass mode are switched off, the file tools cannot
+read or write outside the project, and deleting files, `git push`, `git reset` and `git clean` always ask first. The
+two broad commands above are no longer allowed without asking.
+
+**Remaining limits:** these rules do not limit what a shell command can reach, so reviewing each command is still
+part of the protection, and the network stays open. A dev container from the start would have been the stronger
+choice.
+
+Code changes followed the rule in `CLAUDE.md`: the agent shows each function first and writes it only after the
+user's OK. Tests and the website were used to check every change; commits and pushes were made only on the user's
+request. No secrets or API keys exist in the project.
 
 Specialised agent roles used during development are described in `.claude/agents/` (entity-builder,
 feature-builder, test-writer, acceptance-tester).

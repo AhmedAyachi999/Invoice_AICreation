@@ -1,7 +1,7 @@
 # Project overview
 
 AI Invoice Assistant: a local REST API (FastAPI, 127.0.0.1) for customers, products and invoices, with Ollama bots
-(llama3.2:3b, temperature 0). The specification is in `docs/`: requirements.pdf, architecture.pdf, model_choice.pdf.
+(llama3.2:3b, temperature 0). The specification is in `docs/submission/`: requirements.pdf, architecture.pdf, model_choice.pdf.
 
 # How we write code together
 
